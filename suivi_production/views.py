@@ -353,10 +353,16 @@ def api_demarrer_tache(request):
         # --- PHASE 1 : PRÉPARATION DE LA MODAL ---
         operateur = Operateur.objects.get(code__iexact=data.get('code_operateur'))
         parts = data.get('code_of_operation').split('/')
-        operation = Operation.objects.select_related('ordre_fabrication').get(ordre_fabrication__numero_of=parts[0], numero_phase=int(parts[1]))
+        operation = Operation.objects.select_related('ordre_fabrication', 'poste').get(ordre_fabrication__numero_of=parts[0], numero_phase=int(parts[1]))
         of = operation.ordre_fabrication
 
-        # ... (les contrôles de compétence, etc. ne changent pas)
+        # --- VÉRIFICATION DE COMPÉTENCE ---
+        # On s'assure que l'opérateur est bien qualifié pour le poste requis par l'opération.
+        if operation.poste not in operateur.postes_qualifies.all():
+            return JsonResponse({
+                'status': 'error',
+                'message': f"Compétence manquante : L'opérateur {operateur.nom} n'est pas qualifié pour le poste '{operation.poste.nom}'."
+            }, status=403) # 403 Forbidden est plus sémantique ici
 
         # ==================== DÉBUT DE LA CORRECTION PRINCIPALE (Phase 1) ====================
         # On interdit explicitement de démarrer une opération terminée.

@@ -60,6 +60,10 @@ class OrdreFabricationForm(forms.ModelForm):
         }
 
 class OperationForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['titre'].required = False
+
     class Meta:
         model = Operation
         fields = [
