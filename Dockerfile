@@ -23,8 +23,8 @@ RUN mkdir -p /app/logs && touch /app/logs/cron.log
 
 # On crée notre fichier crontab directement dans l'image
 # Note : on utilise echo et tee pour écrire dans le fichier
-RUN echo "5 1 * * *    python /app/manage.py generer_rapport_quotidien >> /app/logs/cron.log 2>&1" | tee /etc/cron.d/aerotrack-cron
-RUN echo "5 2 * * 1    python /app/manage.py archiver_ofs --jours 1 >> /app/logs/cron.log 2>&1" | tee -a /etc/cron.d/aerotrack-cron
+RUN echo "5 1 * * *    /usr/local/bin/python /app/manage.py generer_rapport_quotidien >> /app/logs/cron.log 2>&1" | tee /etc/cron.d/aerotrack-cron
+RUN echo "5 2 * * 1    /usr/local/bin/python /app/manage.py archiver_ofs --jours 1 >> /app/logs/cron.log 2>&1" | tee -a /etc/cron.d/aerotrack-cron
 
 # On donne les bonnes permissions
 RUN chmod 0644 /etc/cron.d/aerotrack-cron
