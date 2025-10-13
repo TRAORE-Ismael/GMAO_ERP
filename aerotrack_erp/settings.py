@@ -1,5 +1,5 @@
 """
-Django settings for herakles_erp project.
+Django settings for aerotrack_erp project.
 """
 
 from pathlib import Path
@@ -59,7 +59,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'herakles_erp.urls'
+ROOT_URLCONF = 'aerotrack_erp.urls'
 
 TEMPLATES = [
     {
@@ -76,7 +76,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'herakles_erp.wsgi.application'
+WSGI_APPLICATION = 'aerotrack_erp.wsgi.application'
 
 # =============================================================================
 # BASE DE DONNÉES

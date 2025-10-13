@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    command: gunicorn herakles_erp.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn aerotrack_erp.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -9,7 +9,7 @@ services:
     expose:
       - 8000
     environment:
-      - DJANGO_SETTINGS_MODULE=herakles_erp.settings
+      - DJANGO_SETTINGS_MODULE=aerotrack_erp.settings
       - POSTGRES_DB=aerotrack_db
       - POSTGRES_USER=aerotrack_user
       - POSTGRES_PASSWORD=aerotrack_password

@@ -1,17 +1,17 @@
-# Herakles ERP - Logiciel de Suivi de Production (GPAO)
+# Aerotrack ERP - Logiciel de Suivi de Production (GPAO)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.x-green.svg)](https://www.djangoproject.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Herakles ERP** est une application web full-stack développée avec Django, simulant un système de **Gestion de la Production Assistée par Ordinateur (GPAO)**. Elle permet le suivi en temps réel des opérations en atelier, la gestion des ordres de fabrication, des stocks, et fournit des tableaux de bord analytiques pour les managers.
+**Aerotrack ERP** est une application web full-stack développée avec Django, simulant un système de **Gestion de la Production Assistée par Ordinateur (GPAO)**. Elle permet le suivi en temps réel des opérations en atelier, la gestion des ordres de fabrication, et fournit des tableaux de bord analytiques pour les managers.
 
-Ce projet a été conçu pour démontrer la mise en œuvre d'une logique métier complexe dans un environnement web moderne, sécurisé et réactif, en utilisant les meilleures pratiques de développement Django et une architecture orientée services via des appels AJAX.
+Ce projet a été conçu pour démontrer la mise en œuvre d'une logique métier complexe dans un environnement web moderne, conteneurisé avec Docker, sécurisé et réactif.
 
 ---
 
-### Tableau de Bord Manager
+### Aperçu du Tableau de Bord Manager
 ![Aperçu du Tableau de Bord](https://i.imgur.com/YOUR_IMAGE_ID.png)
 *(Pensez à remplacer ce lien par une vraie capture d'écran de votre tableau de bord)*
 
@@ -19,182 +19,113 @@ Ce projet a été conçu pour démontrer la mise en œuvre d'une logique métier
 
 ## 📋 Table des Matières
 1.  [Fonctionnalités Clés](#-fonctionnalités-clés)
-2.  [Architecture Technique](#-architecture-technique)
-3.  [Technologies Utilisées](#-technologies-utilisées)
-4.  [Installation et Lancement](#-installation-et-lancement)
-5.  [Utilisation](#-utilisation)
-6.  [Améliorations Futures](#-améliorations-futures)
+2.  [Technologies Utilisées](#-technologies-utilisées)
+3.  [Installation et Lancement (avec Docker)](#-installation-et-lancement-avec-docker)
+4.  [Premiers Pas](#-premiers-pas)
+5.  [Améliorations Futures](#-améliorations-futures)
+6.  [Licence](#-licence)
 
 ---
 
 ## ✨ Fonctionnalités Clés
 
-### 1. Gestion des Utilisateurs et des Rôles
--   **Système d'Authentification Complet** : Inscription, connexion et déconnexion sécurisées.
--   **Gestion des Rôles** :
-    -   **Manager** : Accès complet au suivi, aux tableaux de bord, à la gestion des OFs, des matières et des machines.
-    -   **Poste de Travail** : Accès restreint à l'interface de saisie des temps pour les opérations.
--   **Redirection Automatique** : Les utilisateurs sont redirigés vers leur interface respective après connexion.
-
-### 2. Module de Production (GPAO)
--   **Gestion des Ordres de Fabrication (OFs)** : Interface CRUD complète pour définir les OFs et leurs gammes d'opérations.
--   **Interface de Saisie pour l'Atelier** :
-    -   Déclaration du début et de la fin des opérations via un système de "scan" (simulation par clic).
-    -   Déclaration des quantités fabriquées et des rebuts.
-    -   Interface **réactive (AJAX)** pour une expérience utilisateur fluide sans rechargement de page.
--   **Génération de Fiches de Fabrication** : Fiches imprimables incluant les **codes-barres** pour chaque opération.
-
-### 3. Gestion des Ressources
--   **Gestion des Stocks** : Catalogue des matières premières, association aux opérations (nomenclature) et **décrémentation automatique des stocks** en temps réel.
--   **Gestion du Parc Machines** : Catalogue des machines avec suivi de leur statut (Disponible, En panne, Maintenance).
-
-### 4. Reporting et Suivi
--   **Tableau de Bord Manager** : Vue synthétique avec KPIs en temps réel (opérations en cours, opérateurs actifs, production, taux de rebut) et **graphique** de l'historique de production.
--   **Suivi Détaillé** : Vue tabulaire de tous les pointages avec des options de **filtrage** avancées.
--   **Export de Données** : Export de la vue de suivi au format **CSV**.
-
----
-
-## 🏗️ Architecture Technique
-
-L'application est construite autour d'une architecture Django standard, avec une séparation claire entre le backend et le frontend.
-
--   **Backend (Django)** : Gère toute la logique métier, l'accès à la base de données via l'ORM, l'authentification et expose des endpoints API pour le frontend.
--   **Frontend (JavaScript/AJAX)** : L'interface de saisie en atelier est une **Single Page Application (SPA)** de-facto. Elle communique avec le backend via des appels `fetch` (AJAX) pour :
-    -   Récupérer les informations d'un OF.
-    -   Démarrer et arrêter un pointage.
-    -   Valider une production (quantités et rebuts).
-    -   Signaler une anomalie.
-    
-Cette approche permet une interactivité maximale sans recharger la page, simulant une application de bureau moderne.
+-   **Gestion des Rôles** : `Manager` (accès complet) et `Poste` (accès à la saisie).
+-   **Gestion des Ordres de Fabrication (OFs)** : Interface CRUD pour définir les OFs et leurs gammes.
+-   **Interface de Saisie pour l'Atelier** : Déclaration de début/fin de tâches, quantités et rebuts via une interface **réactive (AJAX)** sans rechargement.
+-   **Génération de Codes-Barres** : Pour chaque opération, facilitant la saisie.
+-   **Tableau de Bord Manager** : KPIs, graphique de production, et alertes (anomalies, stocks, retards) avec **rafraîchissement automatique** toutes les 30 secondes.
+-   **Historique & Archivage** : Consultation des tendances de production sur le long terme et archivage des anciens OFs via des **tâches automatisées**.
+-   **Gestion Multilingue** : Interface disponible en Français et en Anglais.
 
 ---
 
 ## 🛠️ Technologies Utilisées
 
--   **Backend** :
-    -   **Python 3.10+**
-    -   **Django 5.x**
-    -   **Gunicorn** & **Waitress** : Serveurs d'application WSGI.
-    -   **Base de données** : PostgreSQL (en production via Docker), SQLite3 (en développement local).
--   **Frontend** :
-    -   **HTML5, CSS3, JavaScript (ES6+)**
-    -   **Bootstrap 5** : Framework CSS pour un design responsive.
-    -   **AJAX (Fetch API)** : Pour la communication asynchrone.
-    -   **Chart.js** : Pour les graphiques interactifs.
--   **Conteneurisation** :
-    -   **Docker** & **Docker Compose** : Pour une mise en production et un développement standardisés.
-    -   **Nginx** : Comme reverse proxy pour servir les fichiers statiques et l'application Django.
--   **Bibliothèques Python Notables** :
-    -   `python-barcode` : Pour la génération des codes-barres SVG.
+-   **Backend** : Python 3.10+, Django 5.x, Gunicorn, PostgreSQL.
+-   **Frontend** : HTML5, CSS3, JavaScript (ES6+), Bootstrap 5, AJAX (Fetch API), Chart.js.
+-   **Conteneurisation** : Docker & Docker Compose.
+-   **Reverse Proxy** : Nginx.
+-   **Bibliothèques Notables** : `python-barcode`, `python-dotenv`.
 
 ---
 
-## 🚀 Installation et Lancement
+## 🚀 Installation et Lancement (avec Docker)
 
-### Option 1 : Avec Docker (Recommandé)
+Cette méthode est la seule officiellement supportée. Elle garantit que l'application s'exécute dans un environnement contrôlé et identique à la production.
 
-Cette méthode est la plus simple pour lancer l'application avec une configuration similaire à la production.
+**Prérequis** : Git, Docker et Docker Compose installés sur votre machine.
 
-**Prérequis** : Docker et Docker Compose installés.
+**1. Cloner le projet**
+```bash
+git clone https://github.com/TRAORE_Ismael/GMAO_ERP.git
+cd GMAO_ERP
+```
 
-1.  **Cloner le projet** :
-    ```bash
-    git clone https://votre-lien-vers-le-repo.git
-    cd GMAO_ERP
-    ```
+**2. Configurer l'environnement**
+Le projet utilise un fichier `.env` pour les variables de configuration. Copiez le fichier d'exemple fourni :
 
-2.  **Lancer les conteneurs** :
-    ```bash
-    docker-compose up --build
-    ```
-    
-    L'application sera accessible à l'adresse [http://localhost:8000](http://localhost:8000).
+```bash
+# Sur Windows (PowerShell)
+copy env.example .env
 
-### Option 2 : Installation Manuelle Locale
+# Sur macOS/Linux
+cp env.example .env
+```
+Le fichier `.env` par défaut est déjà configuré pour le développement. Vous n'avez rien à modifier pour un premier lancement.
 
-1.  **Cloner le projet** et naviguer dans le dossier.
+**3. Lancer l'application**
+Cette commande va construire les images Docker, démarrer tous les services (web, base de données, nginx, cron) et lancer l'application.
 
-2.  **Créer un environnement virtuel** :
-    ```bash
-    python -m venv tdm
-    ```
+```bash
+docker compose up --build -d
+```
+*(Le `-d` lance les conteneurs en arrière-plan. La première construction peut prendre quelques minutes).
 
-3.  **Activer l'environnement** :
-    -   Sur Windows : `tdm\Scripts\activate`
-    -   Sur macOS/Linux : `source tdm/bin/activate`
+**4. Initialiser la base de données**
+Ouvrez un nouveau terminal et exécutez la commande suivante pour créer les tables de la base de données.
 
-4.  **Installer les dépendances** :
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+docker compose exec web python manage.py migrate
+```
 
-5.  **Appliquer les migrations** :
-    ```bash
-    python manage.py migrate
-    ```
+**5. Créer un compte Administrateur**
+Cet utilisateur aura un accès complet, y compris à l'interface d'administration de Django.
 
-6.  **Lancer le serveur de développement** :
-    ```bash
-    python manage.py runserver
-    ```
-    L'application sera accessible à l'adresse [http://localhost:8000](http://localhost:8000).
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+Suivez les instructions pour définir un nom d'utilisateur, un e-mail et un mot de passe.
+
+**L'application est prête !**
+-   **Site web** : [http://localhost/](http://localhost/) (ou http://localhost:80/)
+-   **Admin Django** : [http://localhost/admin/](http://localhost/admin/)
 
 ---
 
-## 🧑‍💻 Utilisation
+## 🧑‍💻 Premiers Pas
 
-1.  **Créer des comptes** :
-    -   Rendez-vous sur la page d'accueil et utilisez le formulaire d'inscription.
-    -   Le premier utilisateur créé sera un simple "Poste". Pour créer un "Manager", vous devrez modifier son rôle directement dans la base de données ou via l'interface d'administration de Django (après avoir créé un superutilisateur avec `python manage.py createsuperuser`).
+1.  **Créer un compte Manager** :
+    -   Connectez-vous à l'Admin Django (`/admin/`) avec le super-utilisateur que vous venez de créer.
+    -   Allez dans la section "Users", créez un nouvel utilisateur.
+    -   Allez dans la section "Profiles", créez un profil pour cet utilisateur et assignez-lui le rôle `MANAGER`.
 
-2.  **Se connecter** :
-    -   Un utilisateur avec le rôle **Manager** sera redirigé vers le tableau de bord.
-    -   Un utilisateur avec le rôle **Poste** sera redirigé vers l'interface de saisie.
+2.  **Créer un compte Opérateur ("Poste")** :
+    -   De la même manière, créez un autre utilisateur et assignez-lui le rôle `POSTE`.
+
+3.  **Se connecter et explorer** :
+    -   Déconnectez-vous de l'admin et connectez-vous sur le site principal avec votre compte Manager pour accéder au tableau de bord.
+    -   Connectez-vous avec votre compte Poste pour accéder à l'interface de saisie.
 
 ---
 
 ## 🔮 Améliorations Futures
--   [ ] **Gestion des Droits plus Fine** : Utiliser les groupes et permissions de Django.
--   [ ] **Tests Unitaires** : Augmenter la couverture de tests pour la logique métier.
--   [ ] **Notifications en Temps Réel** : Utiliser WebSockets pour les alertes (anomalies, stocks bas).
--   [ ] **Intégration CI/CD** : Mettre en place un pipeline avec GitHub Actions pour automatiser les tests et le déploiement.
+
+-   [ ] **Gestion des droits plus fine** via les groupes et permissions de Django.
+-   [ ] **Augmenter la couverture de tests unitaires**.
+-   [ ] **Notifications en temps réel** avec WebSockets (Django Channels).
+-   [ ] **Mise en place d'un pipeline CI/CD** avec GitHub Actions.
 
 ---
 
-## 📄 License
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-### 3. Configurer la Base de Données
-Le projet est configuré pour utiliser SQLite par défaut, aucune configuration supplémentaire n'est requise.
-```bash
-# Créer les fichiers de migration
-python manage.py makemigrations
-
-# Appliquer les migrations pour créer la base de données
-python manage.py migrate
-```
-
-### 4. Créer un Super-Utilisateur
-Cet utilisateur aura accès à l'interface d'administration de Django.
-```bash
-python manage.py createsuperuser
-```
-Suivez les instructions pour créer votre compte administrateur.
-
-### 5. Lancer le Serveur de Développement
-```bash
-python manage.py runserver
-```
-
-L'application est maintenant accessible à l'adresse **http://127.0.0.1:8000/**.
-
----
-
-### Utilisation
-1.  Accédez à l'application.
-2.  Créez un compte **Manager** via le formulaire d'inscription.
-3.  Connectez-vous avec ce compte.
-4.  Utilisez l'interface d'administration (`/admin/`) ou la section "Gestion des OFs" pour créer des `MatierePremiere`, des `Machine`, des `Operateur`, et un `OrdreFabrication` avec ses opérations.
-5.  Déconnectez-vous et créez un compte **Poste de Travail**.
-6.  Connectez-vous avec ce second compte pour accéder à l'interface de saisie et simuler la production.
+## 📄 Licence
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.

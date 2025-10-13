@@ -1,5 +1,5 @@
 """
-WSGI config for herakles_erp project.
+WSGI config for aerotrack_erp project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'herakles_erp.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aerotrack_erp.settings')
 
 application = get_wsgi_application()
