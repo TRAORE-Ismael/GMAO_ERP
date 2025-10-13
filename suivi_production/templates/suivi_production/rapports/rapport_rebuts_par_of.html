@@ -1,0 +1,80 @@
+{% extends "suivi_production/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Rapport des Rebuts" %}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4 text-danger">{% translate "Rebuts par Ordre de Fabrication" %}</h1>
+
+<form method="get" class="row row-cols-lg-auto g-2 align-items-end mb-3">
+    <div class="col-12 col-sm-4">
+        <label class="form-label small text-muted">{% translate 'Numéro OF' %}</label>
+        <input type="text" name="numero" value="{{ filtre_numero }}" class="form-control" placeholder="{% translate 'ex: 9044' %}">
+    </div>
+    <div class="col-12 col-sm-4">
+        <label class="form-label small text-muted">{% translate 'Date de finalisation' %}</label>
+        <input type="date" name="date" value="{{ filtre_date }}" class="form-control">
+    </div>
+    <div class="col-12 col-sm-auto">
+        <button class="btn btn-primary" type="submit">{% translate 'Filtrer' %}</button>
+        <a href="{% url 'rapport_rebuts' %}" class="btn btn-outline-secondary">{% translate 'Réinitialiser' %}</a>
+    </div>
+    <div class="col-12 col-sm-auto ms-lg-auto">
+        <a href="{% url 'export_rebuts_par_of_xlsx' %}?numero={{ filtre_numero }}&date={{ filtre_date }}" class="btn btn-sm btn-outline-success">Excel</a>
+        <a href="{% url 'export_rebuts_par_of_pdf' %}?numero={{ filtre_numero }}&date={{ filtre_date }}" class="btn btn-sm btn-outline-danger">PDF</a>
+    </div>
+</form>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>{% translate "Numéro OF" %}</th>
+                        <th>{% translate "Titre" %}</th>
+                        <th class="text-center">{% translate "Pièces Finales" %}</th>
+                        <th class="text-center">{% translate "Total Rebuts" %}</th>
+                        <th class="text-center">{% translate "Taux de Rebut" %}</th>
+                        <th>{% translate "Détails" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for of in ordres_fabrication %}
+                    {% with total=of.quantite_produite_actuelle|add:of.quantite_rebut_totale %}
+                    <tr>
+                        <td class="fw-bold">{{ of.numero_of }}</td>
+                        <td>{{ of.titre }}</td>
+                        <td class="text-center">{{ of.quantite_produite_actuelle }} / {{ of.quantite_a_produire }}</td>
+                        <td class="text-center text-danger">{{ of.quantite_rebut_totale }}</td>
+                        <td class="text-center">
+                            {% if total > 0 %}
+                            <span class="badge bg-danger">{% widthratio of.quantite_rebut_totale total 100 %}%</span>
+                            {% else %}
+                            <span class="badge bg-secondary">0%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'rapport_rebuts_par_operation' of.pk %}" class="btn btn-sm btn-outline-danger">
+                                {% translate "Voir les rebuts par opérations" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center p-4">{% translate "Aucun rebut enregistré sur aucun OF." %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    
+</div>
+<div class="mt-2 text-muted small">
+    {% translate "Astuce" %}: {% translate "cliquez sur Détails pour explorer les rebuts au niveau des opérations." %}
+    
+</div>
+{% endblock %}

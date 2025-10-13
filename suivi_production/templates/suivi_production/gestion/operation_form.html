@@ -1,0 +1,39 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Modifier l'Opération : {{ operation.titre }}{% endblock %}
+
+{% block content %}
+<h1>Modifier l'Opération : "{{ operation.titre }}"</h1>
+<p class="text-muted">OF : {{ operation.ordre_fabrication.numero_of }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="card">
+        <div class="card-header">
+            Matières Premières Requises
+        </div>
+        <div class="card-body">
+            {{ formset.management_form }}
+            <div class="row fw-bold mb-2">
+                <div class="col-md-6">Matière Première</div>
+                <div class="col-md-4">Quantité Nécessaire</div>
+                <div class="col-md-2">Supprimer?</div>
+            </div>
+            <hr>
+            {% for form in formset %}
+                <div class="row align-items-center mb-2">
+                    {{ form.id }}
+                    <div class="col-md-6">{{ form.matiere }}</div>
+                    <div class="col-md-4">{{ form.quantite_necessaire }}</div>
+                    <div class="col-md-2">{% if form.instance.pk %}{{ form.DELETE }}{% endif %}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success">Sauvegarder les Matières</button>
+        <a href="{% url 'of_update' operation.ordre_fabrication.pk %}" class="btn btn-secondary">Retour à l'OF</a>
+    </div>
+</form>
+{% endblock %}

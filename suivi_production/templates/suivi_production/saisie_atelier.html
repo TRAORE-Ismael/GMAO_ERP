@@ -1,0 +1,284 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Saisie Atelier{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body p-4 p-md-5">
+        <h1 class="card-title text-center mb-4">Veuillez Entrer les Informations</h1>
+        <div id="alert-container"></div>
+
+        <!-- Formulaire principal, toujours visible -->
+        <div id="saisie-form-container">
+            <div class="mb-3">
+                <label for="id_code_operateur" class="form-label">Opérateur / Mach.</label>
+                <input type="text" id="id_code_operateur" class="form-control form-control-lg" autofocus required>
+            </div>
+            <div class="mb-3">
+                <label for="id_code_of_operation" class="form-label">OF / Opération</label>
+                <input type="text" id="id_code_of_operation" class="form-control form-control-lg" required>
+            </div>
+            
+            <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-4">
+                <button type="button" id="terminer-btn" class="btn btn-danger btn-lg flex-grow-1">
+                    <i class="fa fa-stop-circle me-2"></i>Terminer Tâche
+                </button>
+                <button type="button" id="demarrer-btn" class="btn btn-success btn-lg flex-grow-1">
+                    <i class="fa fa-play-circle me-2"></i>Démarrer Tâche
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!--                      MODALS                              -->
+<!-- ======================================================== -->
+
+<!-- Modal de DÉMARRAGE -->
+<div class="modal fade" id="demarrerTacheModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Démarrer l'Opération ?</h5></div>
+            <div class="modal-body">
+                <p><strong>Opération :</strong> <span id="demarrer-modal-op-titre"></span></p>
+                <form id="demarrer-tache-form">
+                    <input type="hidden" id="demarrer-modal-operation-id">
+                    <input type="hidden" id="demarrer-modal-operateur-id">
+                    <div class="alert alert-info">
+                        Quantité max. disponible pour cette opération : <strong id="demarrer-qty-disponible"></strong>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_nb_pris" class="form-label">Quantité que je prends en charge</label>
+                        <input type="number" id="id_nb_pris" class="form-control" required>
+                    </div>
+                    <div id="demarrer-validation-error" class="alert alert-danger" style="display: none;"></div>
+                    <div class="d-grid"><button type="submit" class="btn btn-success">Confirmer le Démarrage</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de FIN -->
+<div class="modal fade" id="finTacheModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Terminer l'opération ?</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p><strong>Opération :</strong> <span id="fin-modal-op-titre"></span></p>
+                <form id="fin-tache-form">
+                    <input type="hidden" id="fin-modal-pointage-id">
+                    <div class="alert alert-info">Quantité à déclarer (prise en charge) : <strong id="fin-qty-a-declarer"></strong></div>
+                    <div class="mb-3"><label for="id_nb_fabrique" class="form-label">Nb fabriqué</label><input type="number" id="id_nb_fabrique" class="form-control" required></div>
+                    <div class="mb-3"><label for="id_nb_rebut" class="form-label">Nb rebut</label><input type="number" id="id_nb_rebut" class="form-control" required></div>
+                    <div id="fin-validation-error" class="alert alert-danger" style="display: none;"></div>
+                    <hr>
+                    <div class="form-check form-switch my-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="probleme-switch">
+                        <label class="form-check-label" for="probleme-switch">Signaler un problème sur cette tâche ?</label>
+                    </div>
+                    <div class="d-grid"><button type="submit" class="btn btn-primary">Valider</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour la description de l'ANOMALIE -->
+<div class="modal fade" id="anomalieModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Signaler un Problème</h5></div>
+            <div class="modal-body">
+                <form id="anomalie-form">
+                    <div class="mb-3">
+                        <label for="probleme-description" class="form-label">Veuillez décrire le problème rencontré :</label>
+                        <textarea id="probleme-description" class="form-control" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" id="confirmer-fin-avec-anomalie" class="btn btn-danger">Valider et Signaler</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Initialisation
+    const demarrerTacheModal = new bootstrap.Modal(document.getElementById('demarrerTacheModal'));
+    const finTacheModal = new bootstrap.Modal(document.getElementById('finTacheModal'));
+    const anomalieModal = new bootstrap.Modal(document.getElementById('anomalieModal'));
+    const csrftoken = getCookie('csrftoken');
+    let quantiteAttendueFin = 0;
+    let tempFinTacheData = {}; // Pour stocker les données entre les deux modals de fin
+
+    // --- Fonctions Utilitaires ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function showAlert(message, type = 'info') {
+        const alertContainer = document.getElementById('alert-container');
+        alertContainer.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+        window.scrollTo(0, 0);
+    }
+    function getSaisieData() {
+        return {
+            code_operateur: document.getElementById('id_code_operateur').value,
+            code_of_operation: document.getElementById('id_code_of_operation').value,
+        };
+    }
+
+    // --- GESTION DU BOUTON DÉMARRER ---
+    document.getElementById('demarrer-btn').addEventListener('click', function() {
+        fetch("{% url 'api_demarrer_tache' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify(getSaisieData())
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'confirmation_demarrage') {
+                document.getElementById('demarrer-modal-operation-id').value = data.operation_id;
+                document.getElementById('demarrer-modal-operateur-id').value = data.operateur_id;
+                document.getElementById('demarrer-modal-op-titre').textContent = data.operation_titre;
+                document.getElementById('demarrer-qty-disponible').textContent = data.quantite_disponible;
+                document.getElementById('id_nb_pris').value = data.quantite_disponible;
+                document.getElementById('id_nb_pris').max = data.quantite_disponible;
+                document.getElementById('demarrer-validation-error').style.display = 'none';
+                demarrerTacheModal.show();
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        });
+    });
+
+    // --- GESTION DU FORMULAIRE DE LA MODAL DE DÉMARRAGE ---
+    document.getElementById('demarrer-tache-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const quantitePrise = parseInt(document.getElementById('id_nb_pris').value, 10) || 0;
+        const quantiteMax = parseInt(document.getElementById('id_nb_pris').max, 10);
+        const errorDiv = document.getElementById('demarrer-validation-error');
+        if (quantitePrise <= 0 || quantitePrise > quantiteMax) {
+            errorDiv.textContent = `La quantité doit être entre 1 et ${quantiteMax}.`;
+            errorDiv.style.display = 'block';
+            return;
+        }
+        errorDiv.style.display = 'none';
+        const formData = {
+            action: 'valider_demarrage',
+            operation_id: document.getElementById('demarrer-modal-operation-id').value,
+            operateur_id: document.getElementById('demarrer-modal-operateur-id').value,
+            quantite_prise: quantitePrise
+        };
+        fetch("{% url 'api_demarrer_tache' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            showAlert(data.message, data.status === 'success' ? 'success' : 'danger');
+            if (data.status === 'success') {
+                demarrerTacheModal.hide();
+                document.getElementById('id_code_of_operation').value = '';
+                document.getElementById('id_code_of_operation').focus();
+            }
+        });
+    });
+
+    // --- GESTION DU BOUTON TERMINER ---
+    document.getElementById('terminer-btn').addEventListener('click', function() {
+        fetch("{% url 'api_terminer_tache' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify(getSaisieData())
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'confirmation_requise') {
+                quantiteAttendueFin = data.quantite_a_declarer;
+                document.getElementById('fin-modal-pointage-id').value = data.pointage_id;
+                document.getElementById('fin-modal-op-titre').textContent = data.operation_titre;
+                document.getElementById('fin-qty-a-declarer').textContent = quantiteAttendueFin;
+                document.getElementById('id_nb_fabrique').value = quantiteAttendueFin;
+                document.getElementById('id_nb_rebut').value = 0;
+                document.getElementById('fin-validation-error').style.display = 'none';
+                document.getElementById('probleme-switch').checked = false;
+                finTacheModal.show();
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        });
+    });
+
+    // --- GESTION DU FORMULAIRE DE LA MODAL DE FIN ---
+    document.getElementById('fin-tache-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const nbFabrique = parseInt(document.getElementById('id_nb_fabrique').value, 10) || 0;
+        const nbRebut = parseInt(document.getElementById('id_nb_rebut').value, 10) || 0;
+        const errorDiv = document.getElementById('fin-validation-error');
+        if ((nbFabrique + nbRebut) !== quantiteAttendueFin) {
+            errorDiv.textContent = `La somme (${nbFabrique + nbRebut}) doit être égale à la quantité prise en charge (${quantiteAttendueFin}).`;
+            errorDiv.style.display = 'block';
+            return;
+        }
+        errorDiv.style.display = 'none';
+
+        tempFinTacheData = {
+            action: 'valider_fin',
+            pointage_id: document.getElementById('fin-modal-pointage-id').value,
+            quantite_fabriquee: nbFabrique,
+            quantite_rebut: nbRebut,
+            probleme_signale: document.getElementById('probleme-switch').checked,
+        };
+
+        if (tempFinTacheData.probleme_signale) {
+            finTacheModal.hide();
+            anomalieModal.show();
+        } else {
+            sendFinalData(tempFinTacheData);
+        }
+    });
+
+    // --- GESTION DE LA MODAL D'ANOMALIE ---
+    document.getElementById('confirmer-fin-avec-anomalie').addEventListener('click', function() {
+        tempFinTacheData.probleme_description = document.getElementById('probleme-description').value;
+        sendFinalData(tempFinTacheData);
+    });
+
+    function sendFinalData(formData) {
+        fetch("{% url 'api_terminer_tache' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            finTacheModal.hide();
+            anomalieModal.hide();
+            showAlert(data.message, data.status === 'success' ? 'success' : 'danger');
+            if (data.status === 'success') {
+                document.getElementById('id_code_of_operation').value = '';
+                document.getElementById('id_code_of_operation').focus();
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+# Fichiers de configuration de l'IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Environnement virtuel
+tdm/
+venv/
+env/
+
+# Fichiers compilés Python
+*.pyc
+__pycache__/
+
+# Base de données locale (si vous en utilisez une)
+db.sqlite3
+db.sqlite3-journal
+
+# Fichiers de logs
+logs/
+*.log
+
+# Fichiers médias uploadés par les utilisateurs
+# (Bonne pratique de ne pas les versionner)
+mediafiles/
+
+# Fichiers statiques collectés
+staticfiles/
+
+# Fichier d'environnement pour les secrets
+.env

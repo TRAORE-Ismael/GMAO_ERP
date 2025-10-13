@@ -1,0 +1,68 @@
+{% extends "suivi_production/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Détail de Production pour l'OF" %} {{ of.numero_of }}{% endblock %}
+
+{% block content %}
+
+<!-- ==================== DÉBUT DE LA MODIFICATION ==================== -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'dashboard_manager' %}">{% translate "Tableau de Bord" %}</a>
+        </li>
+        <li class="breadcrumb-item">
+            <!-- Ce lien ramène à la page précédente (la liste des OFs du jour) -->
+            <a href="{% url 'rapport_production_par_of' %}">{% translate "Rapport du Jour" %}</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {% translate "Détail de l'OF" %} {{ of.numero_of }}
+        </li>
+    </ol>
+</nav>
+<!-- ===================== FIN DE LA MODIFICATION ===================== -->
+
+<h1 class="h3 mb-2 text-gray-800">{% translate "Rapport de Production par Opération" %}</h1>
+<p class="mb-4">
+    <strong>OF :</strong> {{ of.numero_of }} - {{ of.titre }} <br>
+    <strong>{% translate "Résultat Final" %} :</strong> {{ of.quantite_produite_actuelle }} {% translate "pièces bonnes" %}, {{ of.quantite_rebut_totale }} {% translate "rebuts" %}.
+</p>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{% translate "Phase" %}</th>
+                        <th>{% translate "Poste / Opération" %}</th>
+                        <th class="text-center">{% translate "Pièces Bonnes" %}</th>
+                        <th class="text-center">{% translate "Pièces au Rebut" %}</th>
+                        <th class="text-center">{% translate "Taux de Rebut" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr class="{% if op.quantite_sortie_rebut > 0 %}table-danger{% endif %}">
+                        <td class="fw-bold">{{ op.numero_phase }}</td>
+                        <td>
+                            {{ op.poste.nom }}
+                            <small class="d-block text-muted">{{ op.titre }}</small>
+                        </td>
+                        <td class="text-center">{{ op.quantite_sortie_bonne }}</td>
+                        <td class="text-center">{{ op.quantite_sortie_rebut }}</td>
+                        <td class="text-center">{{ op.taux_rebut|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center p-4">
+                            {% translate "Cet OF n'a aucune opération définie." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

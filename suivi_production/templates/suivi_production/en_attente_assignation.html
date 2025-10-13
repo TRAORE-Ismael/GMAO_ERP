@@ -1,0 +1,25 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Compte en attente d'assignation{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="card-title text-warning">Compte en attente d'activation</h1>
+                    <p class="lead">Bonjour {{ user.username }},</p>
+                    <p>Votre compte a bien été créé, mais il n'a pas encore de rôle assigné.</p>
+                    <p>Un manager doit valider votre compte et vous attribuer un rôle (Manager ou Poste de travail) pour que vous puissiez accéder à l'application.</p>
+                    <hr>
+                    <p class="text-muted">Veuillez contacter votre administrateur. Si vous êtes l'administrateur, veuillez vous connecter avec votre compte manager pour assigner un rôle à cet utilisateur depuis l'interface d'administration.</p>
+                    <div class="mt-4">
+                        <a href="{% url 'deconnexion' %}" class="btn btn-primary">Se déconnecter</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

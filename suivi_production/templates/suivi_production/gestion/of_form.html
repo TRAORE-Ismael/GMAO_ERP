@@ -1,0 +1,196 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}{% if of %}Modifier l'OF{% else %}Créer un OF{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{% if of %}Modifier l'OF : {{ of.numero_of }}{% else %}Créer un nouvel Ordre de Fabrication{% endif %}</h1>
+    {% if of %}
+        <!-- Note: le lien vers la fiche globale n'est plus pertinent, on préfère les fiches par tâche -->
+        <!-- Vous pouvez le garder si vous le souhaitez, ou le supprimer. -->
+    {% endif %}
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <!-- Section Informations Générales (inchangée, déjà correcte) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><h5 class="mb-0">Informations Générales</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label for="{{ form.numero_of.id_for_label }}" class="form-label">Numéro OF</label>{{ form.numero_of }}</div>
+                <div class="col-md-6 mb-3"><label for="{{ form.titre.id_for_label }}" class="form-label">Titre</label>{{ form.titre }}</div>
+                <div class="col-md-3 mb-3"><label for="{{ form.quantite_a_produire.id_for_label }}" class="form-label">Quantité à Produire</label>{{ form.quantite_a_produire }}</div>
+                <div class="col-md-3 mb-3"><label for="{{ form.statut.id_for_label }}" class="form-label">Statut</label>{{ form.statut }}</div>
+                <div class="col-md-3 mb-3"><label for="{{ form.date_debut_prevu.id_for_label }}" class="form-label">Date début prévu</label>{{ form.date_debut_prevu }}</div>
+                <div class="col-md-3 mb-3"><label for="{{ form.date_fin_prevue.id_for_label }}" class="form-label">Date fin prévue</label>{{ form.date_fin_prevue }}</div>
+                <div class="col-md-12 mb-3"><label for="{{ form.plan_pdf.id_for_label }}" class="form-label">Plan (PDF/Image)</label>{{ form.plan_pdf }}{% if of.plan_pdf %}<small class="form-text text-muted"> Actuellement : <a href="{{ of.plan_pdf.url }}" target="_blank">{{ of.plan_pdf.name }}</a></small>{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Opérations (entièrement revue) -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light"><h5 class="mb-0">Opérations</h5></div>
+        <div class="card-body">
+            {{ formset.management_form }}
+            
+            <div class="row fw-bold mb-2 d-none d-md-flex text-muted small text-uppercase align-items-center">
+                <div class="col-1">Phase</div>
+                <div class="col-2">Poste</div>
+                <div class="col-3">Description</div>
+                <div class="col-2">Type</div>
+                <div class="col-2">Machine</div>
+                <div class="col-1 text-center">Tps (min)</div>
+                <div class="col-1 text-center">Suppr.</div>
+            </div>
+            <hr class="d-none d-md-block mt-0 mb-3">
+
+            {% for form in formset %}
+                <div class="row align-items-center mb-2 gx-2">
+                    {{ form.id }}
+                    {{ form.instructions }}
+                    <div class="col-md-1 mb-2 mb-md-0">{{ form.numero_phase }}</div>
+                    <div class="col-md-2 mb-2 mb-md-0">{{ form.poste }}</div>
+                    <div class="col-md-3 mb-2 mb-md-0">{{ form.titre }}</div>
+                    <div class="col-md-2 mb-2 mb-md-0">{{ form.type_operation }}</div>
+                    <div class="col-md-2 mb-2 mb-md-0">{{ form.machine_assignee }}</div>
+                    <div class="col-md-1 mb-2 mb-md-0">{{ form.temps_prevu_minutes }}</div>
+                    <div class="col-md-1 mb-2 mb-md-0 text-center">
+                        {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+                    </div>
+                </div>
+                <!-- Ligne séparée pour les actions -->
+                <div class="row">
+                    <div class="col-12 text-end border-bottom pb-2 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="openInstructionsModal('{{ form.prefix }}')" title="Gérer les instructions">
+                            <i class="fa fa-list-alt"></i> Instructions
+                        </button>
+                        {% if form.instance.pk %}
+                            <a href="{% url 'operation_update' form.instance.pk %}" class="btn btn-sm btn-outline-info" title="Gérer les matières premières">
+                                <i class="fa fa-cubes"></i> Matières
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Sauvegarder</button>
+        <a href="{% url 'of_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+</form>
+
+<!-- Modal pour les instructions dynamiques -->
+<div class="modal fade" id="instructionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gérer les Instructions pour <span id="modal-poste-nom"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="instructions-form">
+                    <div id="instructions-form-content">
+                        <!-- Le contenu sera généré par JavaScript -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveInstructions()">Sauvegarder Instructions</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    const instructionsModal = new bootstrap.Modal(document.getElementById('instructionsModal'));
+    let currentFormPrefix = '';
+
+    const instructionTemplates = {
+        'Quality Inspection': [
+            {label: 'Contrôle Visuel Conforme', type: 'checkbox', name: 'visuel_ok'},
+            {label: 'Mesure Dimensionnelle (mm)', type: 'number', name: 'dim_mesure', placeholder: 'ex: 150.25'},
+            {label: 'Tolérance Respectée', type: 'checkbox', name: 'tolerance_ok'},
+            {label: 'Commentaire Qualité', type: 'textarea', name: 'commentaire', placeholder: 'Ajouter un commentaire...'},
+        ],
+        'Cutting': [
+            {label: 'Longueur de coupe cible (mm)', type: 'number', name: 'longueur_coupe', step: '0.01'},
+            {label: 'Outil utilisé', type: 'text', name: 'outil', placeholder: 'ex: Scie à ruban XYZ'},
+            {label: 'Vérification de l\'ébavurage', type: 'checkbox', name: 'ebavurage_ok'},
+        ],
+        'Bending': [
+            {label: 'Angle de pliage (°)', type: 'number', name: 'angle_pliage'},
+            {label: 'Rayon de courbure (mm)', type: 'number', name: 'rayon_courbure'},
+            {label: 'Vérifier conformité au gabarit', type: 'checkbox', name: 'gabarit_ok'},
+        ],
+        'default': [
+             {label: 'Instructions Détaillées', type: 'textarea', name: 'instructions_generales', placeholder: 'Décrire les étapes...'},
+        ]
+    };
+
+    function openInstructionsModal(prefix) {
+        currentFormPrefix = prefix;
+        const posteSelect = document.querySelector(`#id_${prefix}-poste`);
+        if (!posteSelect) return;
+        const posteNom = posteSelect.options[posteSelect.selectedIndex].text;
+        
+        document.getElementById('modal-poste-nom').textContent = `"${posteNom}"`;
+        const formContent = document.getElementById('instructions-form-content');
+        formContent.innerHTML = '';
+
+        const template = instructionTemplates[posteNom] || instructionTemplates['default'];
+
+        template.forEach(field => {
+            let fieldHtml = '<div class="mb-3">';
+            if (field.type === 'checkbox') {
+                fieldHtml += '<div class="form-check">';
+                fieldHtml += `<input class="form-check-input" type="checkbox" name="${field.name}" id="instr-${prefix}-${field.name}">`;
+                fieldHtml += `<label class="form-check-label" for="instr-${prefix}-${field.name}">${field.label}</label>`;
+                fieldHtml += '</div>';
+            } else if (field.type === 'textarea') {
+                fieldHtml += `<label for="instr-${prefix}-${field.name}" class="form-label">${field.label}</label>`;
+                fieldHtml += `<textarea class="form-control" name="${field.name}" id="instr-${prefix}-${field.name}" rows="3" placeholder="${field.placeholder || ''}"></textarea>`;
+            } else {
+                fieldHtml += `<label for="instr-${prefix}-${field.name}" class="form-label">${field.label}</label>`;
+                fieldHtml += `<input type="${field.type}" class="form-control" name="${field.name}" id="instr-${prefix}-${field.name}" placeholder="${field.placeholder || ''}" step="${field.step || 'any'}">`;
+            }
+            fieldHtml += '</div>';
+            formContent.innerHTML += fieldHtml;
+        });
+        
+        try {
+            const hiddenInput = document.querySelector(`#id_${prefix}-instructions`);
+            if (hiddenInput && hiddenInput.value) {
+                const instructionsData = JSON.parse(hiddenInput.value);
+                for (const [key, value] of Object.entries(instructionsData)) {
+                    const input = formContent.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            input.checked = value === 'on';
+                        } else {
+                            input.value = value;
+                        }
+                    }
+                }
+            }
+        } catch (e) { console.error("Erreur de parsing JSON pour les instructions:", e); }
+
+        instructionsModal.show();
+    }
+
+    function saveInstructions() {
+        const form = document.getElementById('instructions-form');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        document.querySelector(`#id_${currentFormPrefix}-instructions`).value = JSON.stringify(data);
+        instructionsModal.hide();
+    }
+</script>
+{% endblock %}

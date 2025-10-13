@@ -1,0 +1,97 @@
+/* ========================================================== */
+/*                   CONFIGURATION GÉNÉRALE                   */
+/* ========================================================== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Un fond gris très clair pour faire ressortir le contenu blanc */
+    background-color: #f0f2f5; 
+    color: #212529; 
+}
+
+/* Le conteneur principal reste blanc pour contraster avec le fond */
+main.container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ========================================================== */
+/*                   STYLE DE LA NAVBAR (THÈME CLAIR)          */
+/* ========================================================== */
+
+/* La marque "AEROTRACK" conserve sa couleur rouge distinctive */
+.navbar-brand-custom {
+    color: #dc3545 !important; /* Le rouge "danger" de Bootstrap, pour la cohérence */
+    font-weight: bold;
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+}
+
+/* Style des liens de navigation sur fond clair */
+.navbar-light .navbar-nav .nav-link {
+    color: #495057; /* Un gris foncé pour une bonne lisibilité */
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+    border-bottom: 2px solid transparent; /* Bordure invisible par défaut */
+    padding-bottom: 0.5rem;
+    margin: 0 0.5rem;
+}
+
+/* Effet au survol et pour le lien actif : la couleur devient rouge et la bordure apparaît */
+.navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link.active {
+    color: #dc3545; /* La couleur d'accentuation rouge */
+    border-bottom-color: #dc3545; /* La bordure devient rouge */
+}
+
+/* Style du texte "Bonjour, ..." */
+.navbar-text {
+    color: #6c757d; /* Un gris un peu plus clair */
+}
+
+
+/* ========================================================== */
+/*     STYLE DU FIL D'ARIANE (BREADCRUMB) - CONSERVÉ          */
+/* ========================================================== */
+.breadcrumb {
+    background-color: #e9ecef;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+}
+.breadcrumb-item a {
+    text-decoration: none;
+    color: #0d6efd;
+    font-weight: 500;
+}
+.breadcrumb-item a:hover { text-decoration: underline; }
+.breadcrumb-item.active { color: #6c757d; font-weight: bold; }
+.breadcrumb-item + .breadcrumb-item::before { color: #6c757d; content: ">"; }
+
+
+
+/* ========================================================== */
+/*     CORRECTION FINALE POUR LA PROGRESS-BAR                 */
+/* ========================================================== */
+
+/* On force les propriétés fondamentales de Bootstrap pour la barre de progression.
+   Ceci annulera toute interférence potentielle d'autres règles. */
+.progress {
+    display: flex;
+    overflow: hidden; /* Important pour les coins arrondis */
+    background-color: #e9ecef; /* Fond gris clair */
+    border-radius: 0.375rem; /* Coins arrondis standards */
+}
+
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #0d6efd; /* La couleur bleue par défaut */
+    transition: width 0.6s ease;
+}

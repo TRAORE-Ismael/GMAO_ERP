@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tâche {{ operation.numero_phase }} - OF {{ of.numero_of }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 1.5cm;
+            margin: 1cm auto;
+            border: 1px #dee2e6 solid;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .header-section { border-bottom: 2px solid #dee2e6; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .header-section h1 { font-size: 2.5rem; font-weight: 300; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .info-item { font-size: 0.9rem; }
+        .info-item strong { display: block; color: #6c757d; }
+        .section-title {
+            background-color: #e9ecef;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            border-left: 5px solid #0d6efd;
+        }
+        .instructions ol { padding-left: 1.2rem; }
+        .print-button { position: fixed; top: 20px; right: 20px; }
+        @media print {
+            body { background-color: white; margin: 0; }
+            .page { border: none; box-shadow: none; margin: 0; }
+            .print-button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <button class="btn btn-info print-button" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimer
+    </button>
+    <div class="page">
+        <div class="header-section">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Tâche de production</h1>
+                <h2 class="text-muted">Phase {{ operation.numero_phase }}</h2>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item"><strong>ID Ordre de Production:</strong> {{ of.numero_of }}</div>
+            <div class="info-item"><strong>Produit Fabriqué:</strong> {{ of.titre }}</div>
+            <div class="info-item"><strong>Quantité Planifiée:</strong> {{ of.quantite_a_produire }}</div>
+            <div class="info-item"><strong>Description Tâche:</strong> {{ operation.titre }}</div>
+            <div class="info-item"><strong>Type d'élément:</strong> {{ operation.get_type_operation_display }}</div>
+            <div class="info-item"><strong>Ressource:</strong> {{ operation.machine_assignee.nom|default:"Manuelle" }}</div>
+        </div>
+
+        <div class="section-title">Consommation (Input Products)</div>
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr><th>ID Élément</th><th>Description</th><th>Quantité/Unité</th></tr>
+            </thead>
+            <tbody>
+                {% for item in matieres_requises %}
+                <tr>
+                    <td>{{ item.matiere.reference }}</td>
+                    <td>{{ item.matiere.designation }}</td>
+                    <td>{{ item.quantite_necessaire }} {{ item.matiere.unite_mesure }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted">Aucune matière première requise pour cette étape.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">Instructions de Production (Produce Activity)</div>
+        <div class="instructions">
+            {{ operation.instructions|linebreaksbr|default:"Aucune instruction spécifique." }}
+        </div>
+
+        <div class="section-title">Point de Déclaration (Reporting Point)</div>
+        <p>À la fin de cette tâche, déclarez les informations suivantes :</p>
+        <ul>
+            <li>Quantité fabriquée</li>
+            <li>Quantité au rebut</li>
+        </ul>
+        
+        <div class="barcode-section text-center mt-5">
+            <!-- Ici, on peut mettre un code-barres qui identifie l'opération -->
+        </div>
+    </div>
+</body>
+</html>

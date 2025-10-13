@@ -1,0 +1,110 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Détail du Suivi - OF {{ of.numero_of }}{% endblock %}
+
+{% block content %}
+<!-- Fil d'Ariane pour la navigation -->
+<nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard_manager' %}">Tableau de Bord</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'suivi_atelier' %}">Suivi Atelier</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ of.numero_of }}</li>
+    </ol>
+</nav>
+
+<!-- En-tête de la page -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-0">Détail des Temps pour l'OF {{ of.numero_of }}</h1>
+        <p class="text-muted mb-0">{{ of.titre }}</p>
+    </div>
+</div>
+
+<!-- ==================== NOUVELLE MISE EN PAGE ==================== -->
+<div class="card shadow-sm">
+    <!-- Section des filtres, maintenant à l'intérieur du card-body pour un meilleur look -->
+    <div class="card-body border-bottom">
+        <form method="get" action="" class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <label for="date_filtre" class="visually-hidden">Date</label>
+                <input type="date" name="date_filtre" id="date_filtre" value="{{ valeurs_filtres.date_filtre }}" class="form-control" placeholder="Date">
+            </div>
+            <div class="col-md-3">
+                <label for="operateur_filtre" class="visually-hidden">Opérateur</label>
+                <select name="operateur_filtre" id="operateur_filtre" class="form-select">
+                    <option value="">Tous les opérateurs</option>
+                    {% for op in operateurs %}
+                    <option value="{{ op.id }}" {% if valeurs_filtres.operateur_filtre == op.id|stringformat:"s" %}selected{% endif %}>
+                        {{ op.prenom }} {{ op.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="statut_filtre" class="visually-hidden">Statut</label>
+                <select name="statut_filtre" id="statut_filtre" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="en_cours" {% if valeurs_filtres.statut_filtre == 'en_cours' %}selected{% endif %}>En cours</option>
+                    <option value="termine" {% if valeurs_filtres.statut_filtre == 'termine' %}selected{% endif %}>Terminé</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-primary">Filtrer</button>
+                <a href="{% url 'suivi_detail_of' of.pk %}" class="btn btn-outline-secondary">Réinitialiser</a>
+                <a href="{% url 'export_suivi_csv' of.pk %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                    <i class="fa fa-download me-1"></i> Exporter
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table des pointages -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Phase</th>
+                    <th>Opération</th>
+                    <th>Type</th>
+                    <th>Machine</th>
+                    <th>Opérateur</th>
+                    <th>Début</th>
+                    <th>Fin</th>
+                    <th class="text-end">Durée (min)</th>
+                    <th class="text-end">Coût M.O. (Dh)</th>
+                    <th class="text-center">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pointages %}
+                <tr>
+                    <td class="ps-3 fw-bold">{{ p.operation.numero_phase }}</td>
+                    <td>{{ p.operation.poste }}</td>
+                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis fw-normal">{{ p.operation.get_type_operation_display }}</span></td>
+                    <td class="text-muted">{{ p.operation.machine_assignee.nom|default:"-" }}</td>
+                    <td>{{ p.operateur.code }}</td>
+                    <td>{{ p.heure_debut|date:"d/m/y H:i" }}</td>
+                    <td>{{ p.heure_fin|date:"d/m/y H:i"|default:"--" }}</td>
+                    <td class="text-end">{{ p.duree_minutes|floatformat:2 }}</td>
+                    <td class="text-end">{{ p.cout_mo|floatformat:2 }}</td>
+                    <td class="text-center">
+                        {% if p.heure_fin %}
+                            <span class="badge rounded-pill text-bg-success">Terminé</span>
+                        {% else %}
+                            <span class="badge rounded-pill text-bg-primary">En cours</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center p-5">
+                        <h5 class="text-muted">Aucun pointage trouvé</h5>
+                        <p class="small">Essayez de modifier vos filtres ou de réinitialiser.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

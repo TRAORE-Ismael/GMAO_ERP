@@ -1,0 +1,62 @@
+services:
+  web:
+    build: .
+    command: gunicorn herakles_erp.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    expose:
+      - 8000
+    environment:
+      - DJANGO_SETTINGS_MODULE=herakles_erp.settings
+      - POSTGRES_DB=aerotrack_db
+      - POSTGRES_USER=aerotrack_user
+      - POSTGRES_PASSWORD=aerotrack_password
+      - POSTGRES_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  db:
+    # --- DÉBUT DE LA CORRECTION ---
+    # On passe à une version plus récente de PostgreSQL, compatible avec Django 5.2
+    image: postgres:15
+    # --- FIN DE LA CORRECTION ---
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=aerotrack_db
+      - POSTGRES_USER=aerotrack_user
+      - POSTGRES_PASSWORD=aerotrack_password
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aerotrack_user -d aerotrack_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    depends_on:
+      - web
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  app_network:
+    driver: bridge

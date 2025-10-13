@@ -1,0 +1,96 @@
+{% extends "suivi_production/base.html" %}
+{% load static %}
+
+{% block title %}Accueil - Aerotrack ERP{% endblock %}
+
+{% block content %}
+<style>
+    /*
+      ÉTAPE 1 : Configuration de l'image de fond sur toute la page.
+      Elle est appliquée au `body` pour couvrir tout l'espace visible.
+    */
+    body {
+        background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'images/background3.jpg' %}");
+        background-size: cover;
+        background-position: center center;
+        background-attachment: fixed; /* L'image reste fixe lors du défilement */
+    }
+
+    /*
+      ÉTAPE 2 : Style de la navbar SPÉCIFIQUE à la page d'accueil.
+      On crée un effet de "verre dépoli" semi-transparent.
+    */
+    nav.navbar {
+        background: rgba(10, 20, 30, 0.7) !important; /* Fond sombre semi-transparent */
+        backdrop-filter: blur(5px);                  /* Effet de flou moderne (pour les navigateurs compatibles) */
+        box-shadow: none !important;                   /* On retire l'ombre par défaut */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Ligne de séparation très subtile */
+    }
+
+    /* On s'assure que le texte de la navbar est blanc et lisible sur l'image */
+    .navbar-brand-custom,
+    .navbar .nav-link,
+    .navbar .navbar-text {
+        color: white !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Ajoute une ombre pour améliorer la lisibilité */
+    }
+    
+    /* On ajuste la couleur de la bordure au survol pour les liens */
+    .navbar-light .navbar-nav .nav-link.active,
+    .navbar-light .navbar-nav .nav-link:hover {
+        border-bottom-color: white !important;
+    }
+    
+    /*
+      ÉTAPE 3 : On rend le conteneur principal transparent.
+      C'est ce qui permet de voir l'image de fond sur toute la page.
+    */
+    main.container {
+        background: transparent;
+        box-shadow: none;
+        max-width: 100%;
+        
+        /* On utilise Flexbox pour centrer parfaitement le contenu verticalement */
+        min-height: calc(100vh - 72px); /* Hauteur de l'écran MOINS la hauteur de la navbar */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /*
+      ÉTAPE 4 : Style du texte de bienvenue pour un impact maximal.
+    */
+    .welcome-container {
+        color: white;
+    }
+    .welcome-container h1 {
+        font-size: 4rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+    }
+    .welcome-container p {
+        font-size: 1.3rem;
+        font-weight: 300;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+
+<!-- Contenu HTML de la page, centré par le CSS ci-dessus -->
+<div class="welcome-container text-center">
+    
+    <h1 class="mb-3 display-3">Aerotrack ERP</h1>
+    
+    <p class="lead mb-4">
+        La solution de suivi de production en temps réel pour l'industrie aéronautique.
+    </p>
+    
+    {% if not user.is_authenticated %}
+        <div>
+            <a href="{% url 'connexion' %}" class="btn btn-primary btn-lg px-4 mt-3">Commencer</a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

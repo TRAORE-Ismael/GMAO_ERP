@@ -1,0 +1,151 @@
+{% extends "suivi_production/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Historique de Production" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">{% translate "Historique de Production" %}</h1>
+    
+    <!-- Filtre de période -->
+    <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+            {% blocktranslate %}Derniers {{ jours_a_afficher }} jours{% endblocktranslate %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+            <li><a class="dropdown-item {% if jours_a_afficher == 7 %}active{% endif %}" href="?jours=7">{% translate "Derniers 7 jours" %}</a></li>
+            <li><a class="dropdown-item {% if jours_a_afficher == 30 %}active{% endif %}" href="?jours=30">{% translate "Derniers 30 jours" %}</a></li>
+            <li><a class="dropdown-item {% if jours_a_afficher == 90 %}active{% endif %}" href="?jours=90">{% translate "Derniers 90 jours" %}</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- GRAPHIQUE HISTORIQUE -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% translate "Évolution de la production" %}</h6>
+    </div>
+    <div class="card-body">
+        <div class="chart-area" style="height: 320px;">
+            <canvas id="historiqueChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- TABLEAU DE DONNÉES HISTORIQUES -->
+<div class="card shadow-sm">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% translate "Détail par Jour" %}</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>{% translate "Date" %}</th>
+                        <th class="text-center">{% translate "Pièces Fabriquées" %}</th>
+                        <th class="text-center">{% translate "Pièces au Rebut" %}</th>
+                        <th class="text-center">{% translate "Taux de Rebut (%)" %}</th>
+                        <th class="text-center">{% translate "Opérateurs Actifs" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rapport in rapports|dictsortreversed:"date" %}
+                    <tr>
+                        <td>{{ rapport.date|date:"d F Y" }}</td>
+                        <td class="text-center">{{ rapport.pieces_fabriquees }}</td>
+                        <td class="text-center">{{ rapport.pieces_rebut }}</td>
+                        <td class="text-center">{{ rapport.taux_rebut|floatformat:2 }}%</td>
+                        <td class="text-center">{{ rapport.operateurs_actifs }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center p-4">
+                            {% translate "Aucune donnée historique disponible pour cette période." %}
+                            <small class="d-block">{% translate "Les rapports sont générés chaque nuit." %}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Récupération des données passées par la vue
+    const chartLabels = {{ chart.labels|safe }};
+    const productionData = {{ chart.production_data|safe }};
+    const rebutData = {{ chart.rebut_data|safe }};
+    const tauxRebutData = {{ chart.taux_rebut_data|safe }};
+
+    const ctx = document.getElementById('historiqueChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                {
+                    label: "{% translate 'Pièces au Rebut' %}",
+                    type: 'bar',
+                    data: rebutData,
+                    backgroundColor: 'rgba(231, 74, 59, 0.7)', // Rouge
+                    yAxisID: 'y'
+                },
+                {
+                    label: "{% translate 'Pièces Fabriquées' %}",
+                    type: 'bar',
+                    data: productionData,
+                    backgroundColor: 'rgba(78, 115, 223, 0.7)', // Bleu
+                    yAxisID: 'y'
+                },
+                {
+                    label: "{% translate 'Taux de Rebut (%)' %}",
+                    type: 'line',
+                    data: tauxRebutData,
+                    borderColor: '#5a5c69', // Gris foncé
+                    borderWidth: 3,
+                    yAxisID: 'y1',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { stacked: true },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    stacked: true,
+                    beginAtZero: true,
+                    title: { display: true, text: "{% translate 'Nombre de Pièces' %}" }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: "{% translate 'Taux de Rebut (%)' %}" }
+                }
+            },
+            plugins: {
+                tooltip: { mode: 'index', intersect: false },
+                legend: { position: 'top' }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

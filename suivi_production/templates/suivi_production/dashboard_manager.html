@@ -1,0 +1,481 @@
+{% extends "suivi_production/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Tableau de Bord Manager" %}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{% translate "Tableau de Bord de l'Atelier" %}</h1>
+
+<!-- ========================================================== -->
+<!--            SECTION 1 : INDICATEURS CLÉS (KPIs)             -->
+<!-- ========================================================== -->
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <a href="{% url 'suivi_atelier' %}?statut_filtre=en_cours" class="card-link">
+            <div class="card text-white bg-primary h-100 shadow kpi-card">
+                <div class="card-body text-center">
+                    <h4 class="card-title" id="kpi-operations-en-cours">{{ kpi.operations_en_cours }}</h4>
+                    <p class="card-text small">{% translate "Opérations en cours" %}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <a href="{% url 'suivi_atelier' %}?date_filtre={{ kpi.today_iso }}" class="card-link">
+            <div class="card text-white bg-success h-100 shadow kpi-card">
+                <div class="card-body text-center">
+                    <h4 class="card-title" id="kpi-operateurs-actifs">{{ kpi.operateurs_actifs }}</h4>
+                    <p class="card-text small">{% translate "Opérateurs actifs / jour" %}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <a href="{% url 'rapport_production_par_of' %}" class="card-link">
+            <div class="card text-white bg-info h-100 shadow kpi-card">
+                <div class="card-body text-center">
+                    <h4 class="card-title" id="kpi-qty-fabriquee">{{ kpi.qty_fabriquee_today }}</h4>
+                    <p class="card-text small">{% translate "Pièces fabriquées / jour" %}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <a href="{% url 'rapport_rebuts' %}" class="card-link">
+            <div class="card text-white bg-danger h-100 shadow kpi-card">
+                <div class="card-body text-center">
+                    <h4 class="card-title" id="kpi-taux-rebut">{{ kpi.taux_rebut_today|floatformat:2 }}%</h4>
+                    <p class="card-text small">{% translate "Taux de rebut/ jour" %}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<style>
+    a.card-link { text-decoration: none; }
+    a.card-link .card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+    a.card-link:hover .card { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important; }
+
+    /* Cartes d'alertes avec hauteur alignée sur les KPI (via variable CSS) */
+    .alerts-card { height: var(--alerts-height, 220px); display: flex; flex-direction: column; }
+    .alerts-card .card-header { flex: 0 0 auto; }
+    .alerts-card .card-scroll { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+    @media (max-width: 768px) { .alerts-card { height: var(--alerts-height, 200px); } }
+    .scroll-controls .btn { padding: 0.15rem 0.4rem; line-height: 1; }
+</style>
+
+<!-- ========================================================== -->
+<!--                   SECTION 2 : ALERTES                      -->
+<!-- ========================================================== -->
+<div class="row">
+    <!-- Colonne des Anomalies -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-primary alerts-card">
+            <div class="card-header bg-primary bg-opacity-10 border-primary d-flex justify-content-between align-items-center">
+                <div><i class="fa fa-bug me-2"></i><strong>{% translate "Anomalies Ouvertes" %}</strong></div>
+                <div class="scroll-controls">
+                    <button class="btn btn-sm btn-outline-primary" onclick="scrollList('anomalies-list', -80)" title="Haut"><i class="fa fa-chevron-up"></i></button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="scrollList('anomalies-list', 80)" title="Bas"><i class="fa fa-chevron-down"></i></button>
+                </div>
+            </div>
+            <div class="list-group list-group-flush card-scroll" id="anomalies-list">
+                {% for anomalie in alertes.anomalies_ouvertes %}
+                    <button type="button" class="list-group-item list-group-item-action" data-anomalie-id="{{ anomalie.id }}" onclick="showAnomalieDetail({{ anomalie.id }}, this)">
+                        {{ anomalie.operation.poste.nom }} (OF {{ anomalie.operation.ordre_fabrication.numero_of }})
+                    </button>
+                {% empty %}
+                    <div class="list-group-item text-muted small">{% translate "Aucune anomalie ouverte." %}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- Colonne Alertes de Stock -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-warning alerts-card">
+            <div class="card-header bg-warning bg-opacity-10 border-warning d-flex justify-content-between align-items-center">
+                <div><i class="fa fa-exclamation-triangle me-2"></i><strong>{% translate "Alertes de Stock Bas" %}</strong></div>
+                <div class="scroll-controls">
+                    <button class="btn btn-sm btn-outline-warning" onclick="scrollList('stock-list', -80)" title="Haut"><i class="fa fa-chevron-up"></i></button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="scrollList('stock-list', 80)" title="Bas"><i class="fa fa-chevron-down"></i></button>
+                </div>
+            </div>
+            <ul class="list-group list-group-flush card-scroll" id="stock-list">
+                {% for matiere in alertes.stock_bas %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ matiere.designation }} ({{ matiere.reference }})
+                        <span class="badge bg-warning text-dark rounded-pill">
+                            {% translate "Stock" %}: {{ matiere.quantite_stock|floatformat:0 }} / {% translate "Seuil" %}: {{ matiere.seuil_alerte|floatformat:0 }}
+                        </span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">{% translate "Aucune alerte de stock." %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <!-- Colonne Opérations en Retard -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-danger alerts-card">
+            <div class="card-header bg-danger bg-opacity-10 border-danger d-flex justify-content-between align-items-center">
+                <div><i class="fa fa-clock me-2"></i><strong>{% translate "Opérations en Retard" %}</strong></div>
+                <div class="scroll-controls">
+                    <button class="btn btn-sm btn-outline-danger" onclick="scrollList('retards-list', -80)" title="Haut"><i class="fa fa-chevron-up"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="scrollList('retards-list', 80)" title="Bas"><i class="fa fa-chevron-down"></i></button>
+                </div>
+            </div>
+            <ul class="list-group list-group-flush card-scroll" id="retards-list">
+                {% for retard in alertes.retards %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'suivi_detail_of' retard.pointage.operation.ordre_fabrication.pk %}">{{ retard.pointage.operation.titre }}</a>
+                            <small class="d-block text-muted">OF {{ retard.pointage.operation.ordre_fabrication.numero_of }} {% translate "par" %} {{ retard.pointage.operateur.code }}</small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">+ {{ retard.depassement_minutes }} min</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">{% translate "Aucune opération en retard." %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!--            SECTION 3 : GRAPHIQUE DE PRODUCTION             -->
+<!-- ========================================================== -->
+<div class="row mt-4">
+    <div class="col">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{% translate "Analyse de Production sur 7 jours" %}</h5>
+                <div style="position: relative; height:280px;"><canvas id="productionChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL pour afficher le détail de l'anomalie -->
+<div class="modal fade" id="anomalieDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">{% translate "Détail de l'Anomalie" %}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p><strong>{% translate "Opération" %}:</strong> <span id="anomalie-op"></span></p>
+                <p><strong>{% translate "Signalée par" %}:</strong> <span id="anomalie-operateur"></span> {% translate "le" %} <span id="anomalie-date"></span></p>
+                <hr>
+                <p><strong>{% translate "Description du problème" %}:</strong></p>
+                <div id="anomalie-description" class="alert alert-warning"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Fermer" %}</button>
+                <button type="button" class="btn btn-success" id="resolveAnomalieBtn">{% translate "Résoudre" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Variable globale pour stocker l'instance du graphique
+    let productionChart; 
+
+    // ========================================================
+    //    FONCTIONS DE MISE À JOUR (UPDATE FUNCTIONS)
+    // ========================================================
+
+    function updateKPIs(kpis) {
+        document.getElementById('kpi-operations-en-cours').textContent = kpis.operations_en_cours;
+        document.getElementById('kpi-operateurs-actifs').textContent = kpis.operateurs_actifs;
+        document.getElementById('kpi-qty-fabriquee').textContent = kpis.qty_fabriquee_today;
+        let raw = kpis.taux_rebut_today;
+        let pct = 0;
+        if (typeof raw === 'number') {
+            pct = raw;
+        } else if (raw != null) {
+            pct = parseFloat(String(raw).replace('%', ''));
+            if (isNaN(pct)) pct = 0;
+        }
+    // Afficher avec 2 décimales comme le graphique
+    const formatted = (typeof pct === 'number' && isFinite(pct)) ? pct.toFixed(2) : '0.00';
+    document.getElementById('kpi-taux-rebut').textContent = `${formatted}%`;
+    }
+
+// DANS le bloc <script> à la fin de votre fichier
+
+function scrollList(id, delta) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollBy({ top: delta, behavior: 'smooth' });
+}
+
+function updateAlerts(alertes) {
+    // --- Mise à jour des anomalies ---
+    const anomalieContainer = document.getElementById('anomalies-list');
+    anomalieContainer.innerHTML = ''; 
+    if (alertes.anomalies_ouvertes && alertes.anomalies_ouvertes.length > 0) {
+        alertes.anomalies_ouvertes.forEach(anomalie => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'list-group-item list-group-item-action';
+            button.setAttribute('data-anomalie-id', anomalie.id);
+            button.textContent = `${anomalie.operation__poste__nom} (OF ${anomalie.operation__ordre_fabrication__numero_of})`;
+            button.onclick = () => showAnomalieDetail(anomalie.id, button);
+            anomalieContainer.appendChild(button);
+        });
+    } else {
+        anomalieContainer.innerHTML = `<div class="list-group-item text-muted small">{% translate "Aucune anomalie ouverte." %}</div>`;
+    }
+
+    // --- Mise à jour du stock bas ---
+    const stockContainer = document.getElementById('stock-list');
+    stockContainer.innerHTML = '';
+    if (alertes.stock_bas && alertes.stock_bas.length > 0) {
+        alertes.stock_bas.forEach(matiere => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+                ${matiere.designation} (${matiere.reference})
+                <span class="badge bg-warning text-dark rounded-pill">
+                    {% translate "Stock" %}: ${Math.floor(matiere.quantite_stock)} / {% translate "Seuil" %}: ${Math.floor(matiere.seuil_alerte)}
+                </span>
+            `;
+            stockContainer.appendChild(li);
+        });
+    } else {
+        stockContainer.innerHTML = `<li class="list-group-item text-muted">{% translate "Aucune alerte de stock." %}</li>`;
+    }
+
+    // --- Mise à jour des retards (AVEC L'URL CORRIGÉE) ---
+    const retardsContainer = document.getElementById('retards-list');
+    retardsContainer.innerHTML = '';
+    if (alertes.retards && alertes.retards.length > 0) {
+        alertes.retards.forEach(retard => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            
+            // ==================== CORRECTION APPLIQUÉE ICI ====================
+            // On utilise la structure d'URL trouvée dans votre fichier urls.py
+            li.innerHTML = `
+                <div>
+                    <a href="/suivi-atelier/of/${retard.of_pk}/">${retard.operation_titre}</a>
+                    <small class="d-block text-muted">OF ${retard.of_numero} {% translate "par" %} ${retard.operateur_code}</small>
+                </div>
+                <span class="badge bg-danger rounded-pill">+ ${retard.depassement_minutes} min</span>
+            `;
+            // =================================================================
+            
+            retardsContainer.appendChild(li);
+        });
+    } else {
+        retardsContainer.innerHTML = `<li class="list-group-item text-muted">{% translate "Aucune opération en retard." %}</li>`;
+    }
+}
+    
+    function updateChart(chartData) {
+        if (productionChart) {
+            productionChart.data.labels = chartData.labels;
+            productionChart.data.datasets[0].data = chartData.rebut_data;
+            productionChart.data.datasets[1].data = chartData.production_data;
+            productionChart.data.datasets[2].data = chartData.taux_rebut_data;
+            productionChart.update();
+        }
+    }
+
+    // ========================================================
+    //    FONCTION PRINCIPALE DE RAFRAÎCHISSEMENT (FETCH)
+    // ========================================================
+    async function refreshDashboardData() {
+        console.log("Refreshing dashboard data at " + new Date().toLocaleTimeString());
+        try {
+            const response = await fetch("{% url 'api_dashboard_data' %}");
+            if (!response.ok) {
+                console.error("Erreur réseau ou du serveur lors du rafraîchissement.");
+                return;
+            }
+            const data = await response.json();
+            
+            updateKPIs(data.kpis);
+            updateAlerts(data.alertes);
+            updateChart(data.chart);
+            
+        } catch (error) {
+            console.error("Impossible de rafraîchir les données du tableau de bord:", error);
+        }
+    }
+
+    // ========================================================
+    //    INITIALISATION DE LA PAGE
+    // ========================================================
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ajuste la hauteur des cartes d'alerte pour correspondre à celle d'une carte KPI
+        function adjustAlertsHeight() {
+            const kpi = document.querySelector('.kpi-card');
+            if (!kpi) return;
+            // offsetHeight inclut padding et bordure de la carte KPI
+            const h = kpi.offsetHeight;
+            if (h && h > 0) {
+                document.documentElement.style.setProperty('--alerts-height', `${h}px`);
+            }
+        }
+
+        // Debounce pour le resize
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(adjustAlertsHeight, 150);
+        });
+
+        // Première mesure après que le layout est prêt
+        setTimeout(adjustAlertsHeight, 0);
+
+        const ctx = document.getElementById('productionChart').getContext('2d');
+        
+        // Données initiales chargées par Django pour le premier affichage
+        const initialChartData = {
+            labels: {{ chart.labels|safe }},
+            datasets: [
+                {
+                    type: 'bar',
+                    label: "{% translate 'Pièces au Rebut' %}",
+                    data: {{ chart.rebut_data|safe }},
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'bar',
+                    label: "{% translate 'Pièces Fabriquées' %}",
+                    data: {{ chart.production_data|safe }},
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'line',
+                    label: "{% translate 'Taux de Rebut (%)' %}",
+                    data: {{ chart.taux_rebut_data|safe }},
+                    borderColor: 'rgba(50, 50, 50, 0.9)',
+                    backgroundColor: 'rgba(50, 50, 50, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: 'rgba(50, 50, 50, 0.9)',
+                    yAxisID: 'y1',
+                    tension: 0.1
+                }
+            ]
+        };
+
+        productionChart = new Chart(ctx, {
+            type: 'bar',
+            data: initialChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        type: 'linear', display: true, position: 'left', stacked: true, beginAtZero: true,
+                        title: { display: true, text: "{% translate 'Nombre de Pièces' %}" }
+                    },
+                    y1: {
+                        type: 'linear', display: true, position: 'right', beginAtZero: true, max: 100,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: "{% translate 'Taux de Rebut (%)' %}" }
+                    }
+                },
+                plugins: {
+                    tooltip: { mode: 'index', intersect: false },
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // --- DÉMARRAGE DE L'AUTO-RAFRAÎCHISSEMENT ---
+        setInterval(refreshDashboardData, 20000); // 30000 ms = 20 secondes
+    });
+
+    // ========================================================
+    //    GESTION DE LA MODAL D'ANOMALIE
+    // ========================================================
+    const anomalieDetailModal = new bootstrap.Modal(document.getElementById('anomalieDetailModal'));
+    let currentAnomalieId = null;
+    let currentAnomalieButton = null;
+    const translatedErrorAlert = "{% translate 'Erreur: Impossible de récupérer les détails de l\'anomalie.' %}";
+    const translatedResolveError = "{% translate 'Erreur: Impossible de résoudre cette anomalie.' %}";
+    const translatedResolveSuccess = "{% translate 'Anomalie résolue.' %}";
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+    
+    async function showAnomalieDetail(anomalieId, sourceBtn) {
+        try {
+            // 1) Récupérer les détails
+            const detailsResp = await fetch(`/api/anomalie/${anomalieId}/`);
+            if (!detailsResp.ok) throw new Error('details');
+            const data = await detailsResp.json();
+            if (data.status !== 'success') throw new Error('details');
+
+            document.getElementById('anomalie-op').textContent = data.details.operation;
+            document.getElementById('anomalie-operateur').textContent = data.details.operateur;
+            document.getElementById('anomalie-date').textContent = data.details.date;
+            document.getElementById('anomalie-description').textContent = data.details.description;
+            currentAnomalieId = anomalieId;
+            currentAnomalieButton = sourceBtn || null;
+            anomalieDetailModal.show();
+
+            // Ici, pas de résolution automatique.
+        } catch (e) {
+            console.error('Erreur lors de l\'ouverture/résolution de l\'anomalie', e);
+            alert(translatedErrorAlert);
+        }
+    }
+
+    async function resolveCurrentAnomalie() {
+        if (!currentAnomalieId) return;
+        try {
+            const csrftoken = getCookie('csrftoken');
+            const resp = await fetch(`/api/anomalie/${currentAnomalieId}/resolve/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken
+                }
+            });
+            if (!resp.ok) throw new Error('resolve');
+            // Retirer du DOM
+            let container = document.getElementById('anomalies-list');
+            if (currentAnomalieButton && currentAnomalieButton.parentElement) {
+                currentAnomalieButton.remove();
+            } else if (container) {
+                const btn = container.querySelector(`[data-anomalie-id="${currentAnomalieId}"]`);
+                if (btn) btn.remove();
+            }
+            // Si la liste est vide, insérer un placeholder
+            container = document.getElementById('anomalies-list');
+            if (container && container.children.length === 0) {
+                container.innerHTML = `<div class="list-group-item text-muted small">{% translate "Aucune anomalie ouverte." %}</div>`;
+            }
+            anomalieDetailModal.hide();
+            // Optionnel: notifier
+            console.log(translatedResolveSuccess);
+        } catch (e) {
+            console.error('Erreur de résolution', e);
+            alert(translatedResolveError);
+        } finally {
+            currentAnomalieId = null;
+            currentAnomalieButton = null;
+        }
+    }
+
+    document.getElementById('resolveAnomalieBtn').addEventListener('click', resolveCurrentAnomalie);
+
+    // Plus besoin de filtrage localStorage: la disparition est persistée côté serveur
+</script>
+{% endblock %}

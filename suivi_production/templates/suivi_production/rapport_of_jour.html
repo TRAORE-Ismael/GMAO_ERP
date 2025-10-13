@@ -1,0 +1,72 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Détail Production OF {{ of.numero_of }} du {{ date_production|date:"d/m/Y" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_manager' %}">Tableau de Bord</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Détail Production OF {{ of.numero_of }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">
+        Détail de Production pour l'OF <strong>{{ of.numero_of }}</strong>
+    </h1>
+    <h5 class="text-muted mb-4">
+        Journée du {{ date_production|date:"l d F Y" }}
+    </h5>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <i class="fa fa-list-ul me-2"></i>Pointages enregistrés
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Opérateur</th>
+                        <th>Poste</th>
+                        <th>Opération</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th class="text-end">Quantité Fabriquée</th>
+                        <th class="text-end">Quantité Rebutée</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pointage in pointages %}
+                    <tr>
+                        <td>{{ pointage.operateur.code }} - {{ pointage.operateur.user.get_full_name }}</td>
+                        <td>{{ pointage.operation.poste.nom }}</td>
+                        <td>{{ pointage.operation.titre }}</td>
+                        <td>{{ pointage.heure_debut|date:"H:i" }}</td>
+                        <td>{{ pointage.heure_fin|date:"H:i" }}</td>
+                        <td class="text-end fw-bold text-success">{{ pointage.quantite_fabriquee }}</td>
+                        <td class="text-end fw-bold text-danger">{{ pointage.quantite_rejetee }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">Aucun pointage trouvé pour cet OF à cette date.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-group-divider">
+                    <tr class="table-light fw-bold">
+                        <td colspan="5" class="text-end">Totaux :</td>
+                        <td class="text-end fs-5">{{ totaux.total_fabrique }}</td>
+                        <td class="text-end fs-5">{{ totaux.total_rebut }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'dashboard_manager' %}" class="btn btn-secondary">
+            <i class="fa fa-arrow-left me-2"></i>Retour au Tableau de Bord
+        </a>
+    </div>
+</div>
+{% endblock %}

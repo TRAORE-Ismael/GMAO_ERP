@@ -1,0 +1,89 @@
+{% extends "suivi_production/base.html" %}
+
+{% block title %}Fiche OF - {{ of.numero_of }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Styles pour la mise en page de la fiche */
+    .fiche-container {
+        border: 1px solid #dee2e6;
+        padding: 2rem;
+        background-color: #fff;
+        border-radius: 0.375rem;
+    }
+    .fiche-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid black;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .fiche-header h1, .fiche-header h2 { margin: 0; }
+    .logo-fiche { font-family: 'Times New Roman', serif; font-size: 2.5em; font-weight: bold; }
+    .barcode-cell svg { width: 200px; height: 60px; }
+    
+    /* Styles pour cacher les éléments inutiles lors de l'impression */
+    @media print {
+        body > nav, .print-button, .alert, .page-title {
+            display: none !important;
+        }
+        main.container {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 page-title">
+    <h3>Aperçu de la Fiche de Fabrication</h3>
+    <button class="btn btn-info print-button" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimer la Fiche
+    </button>
+</div>
+
+<div class="fiche-container">
+    <div class="fiche-header">
+        <div class="logo-fiche">HERAKLES</div>
+        <div>
+            <h1>Ordre de fabrication</h1>
+            <h2>{{ of.numero_of }}</h2>
+        </div>
+        <div>
+            <strong>Date d'édition:</strong> {% now "d/m/Y" %}
+        </div>
+    </div>
+    <h3 class="mt-3">{{ of.titre }}</h3>
+
+    <h4 class="mt-4">OPERATIONS :</h4>
+    <table class="table table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Phase</th>
+                <th>Opération</th>
+                <th>Machine</th>
+                <th>Tps Prévu (h)</th>
+                <th>Code-barres</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in operations_with_barcodes %}
+            <tr>
+                <td>{{ item.operation.numero_phase }}</td>
+                <td>{{ item.operation.titre }}</td>
+                <td>{{ item.operation.machine_assignee.nom|default:"-" }}</td>
+                <td>{{ item.temps_prevu_heures|floatformat:2 }}</td>
+                <td class="barcode-cell">{{ item.barcode_svg|safe }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Aucune opération définie pour cet OF.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

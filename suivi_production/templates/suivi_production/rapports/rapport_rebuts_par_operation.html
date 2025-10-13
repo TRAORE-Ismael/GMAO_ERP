@@ -1,0 +1,32 @@
+{% extends "suivi_production/base.html" %}
+{% block title %}Détail des Rebuts pour l'OF {{ of.numero_of }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'rapport_rebuts' %}" class="btn btn-secondary btn-sm mb-3">
+    <i class="fa fa-arrow-left"></i> Retour à la liste des OFs
+</a>
+<h1>Détail des Rebuts pour l'OF {{ of.numero_of }}</h1>
+
+<table class="table">
+    <thead>
+        <tr><th>Opération</th><th>Total Rebuts</th><th>Taux de Rebut (sur l'op.)</th></tr>
+    </thead>
+    <tbody>
+        {% for op in operations %}
+        <tr>
+            <td>{{ op.poste }}</td>
+            <td>{{ op.total_rebut_op }}</td>
+            
+            <td>
+                <div class="progress">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ op.taux_rebut }}%;" aria-valuenow="{{ op.taux_rebut }}">
+                        {{ op.taux_rebut|floatformat:2 }}%
+                    </div>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

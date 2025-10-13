@@ -1,0 +1,117 @@
+{% extends "suivi_production/base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4">Connexion</h2>
+                {% if form.errors %}
+                    <div class="alert alert-danger">Votre nom d'utilisateur et votre mot de passe ne correspondent pas.</div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" name="username" class="form-control" id="id_username" required>
+                    </div>
+                    <div class="mb-3 position-relative">
+                        <label for="id_password" class="form-label">Mot de passe</label>
+                        <input type="password" name="password" class="form-control" id="id_password" required>
+                        <i class="fa fa-eye-slash position-absolute toggle-password" data-target="id_password" style="right: 15px; top: 40px; cursor: pointer; color: #6c757d;"></i>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Se connecter</button>
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <p>Pas de compte ? 
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#inscriptionModal">
+                            Inscrivez-vous ici
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= MODAL D'INSCRIPTION CORRIGÉE ======================= -->
+<div class="modal fade" id="inscriptionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Inscription</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'inscription' %}">
+            {% csrf_token %}
+            
+            {% if inscription_form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in inscription_form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            {% for field in inscription_form %}
+            <div class="mb-3 position-relative">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                
+                <!-- DÉBUT DE LA CORRECTION : On teste le type de champ -->
+                {% if field.field.widget.input_type == 'select' %}
+                    <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-select {% if field.errors %}is-invalid{% endif %}">
+                        {% for value, text in field.field.choices %}
+                            <option value="{{ value }}">{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="{{ field.field.widget.input_type }}" 
+                           name="{{ field.name }}" 
+                           id="{{ field.id_for_label }}" 
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           {% if field.field.required %}required{% endif %}>
+                {% endif %}
+                <!-- FIN DE LA CORRECTION -->
+                
+                {% if field.name == 'password' or field.name == 'password2' %}
+                    <i class="fa fa-eye-slash position-absolute toggle-password" data-target="{{ field.id_for_label }}" style="right: 15px; top: 40px; cursor: pointer; color: #6c757d;"></i>
+                {% endif %}
+
+                {% if field.help_text %}
+                    <div class="form-text text-muted" style="font-size: 0.875em;">{{ field.help_text|safe }}</div>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">S'inscrire</button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.toggle-password').forEach(item => {
+    item.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('data-target');
+        const passwordInput = document.getElementById(targetId);
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+        this.classList.toggle('fa-eye');
+    });
+});
+</script>
+{% endblock %}

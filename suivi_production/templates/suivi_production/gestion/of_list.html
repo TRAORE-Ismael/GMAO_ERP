@@ -1,0 +1,102 @@
+{% extends "suivi_production/base.html" %}
+{% load i18n l10n %}
+
+{% block title %}{% translate "Gestion des Ordres de Fabrication" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{% translate "Gestion des Ordres de Fabrication" %}</h1>
+    <a href="{% url 'of_create' %}" class="btn btn-primary">
+        <i class="fa fa-plus"></i> {% translate "Créer un nouvel OF" %}
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-3">{% translate "Numéro OF" %}</th>
+                        <th>{% translate "Titre" %}</th>
+                        <th class="text-center">{% translate "Statut" %}</th>
+                        <th style="min-width: 220px;">{% translate "Performance" %}</th>
+                        <th>{% translate "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for of in ofs %}
+                    <tr>
+                        <td class="fw-bold ps-3">{{ of.numero_of }}</td>
+                        <td>{{ of.titre }}</td>
+                        <td class="text-center">
+                            {% if of.statut == 'PLANIFIE' %}
+                                <span class="badge bg-secondary">{% translate "Planifié" %}</span>
+                            {% elif of.statut == 'PRODUCTION' %}
+                                <span class="badge bg-primary">{% translate "En Production" %}</span>
+                            {% elif of.statut == 'TERMINE' %}
+                                <span class="badge bg-success">{% translate "Terminé" %}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- ==================== SECTION PERFORMANCE CORRIGÉE ET FINALE ==================== -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1" style="height: 12px;">
+                                    <div class="progress-bar" 
+                                        role="progressbar" 
+                                        style="width: {{ of.progression_production|unlocalize }}%; background-color: #0d6efd;"  
+                                        aria-valuenow="{{ of.progression_production|floatformat:0|unlocalize }}">
+                                    </div>
+                                </div>
+                                <span class="fw-bold ms-2" style="min-width: 40px;">{{ of.progression_production|floatformat:0 }}%</span>
+                            </div>
+                            
+                            <div class="text-muted small mt-1">
+                                {{ of.quantite_produite_actuelle }} / {{ of.quantite_a_produire }} {% translate "pièces bonnes" %}
+                                {% if of.quantite_rebut_totale > 0 %}
+                                    <span class="text-danger">({{ of.quantite_rebut_totale }} {% translate "rebuts" %})</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <!-- ============================================================================== -->
+
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    {% translate "Actions" %}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'of_update' of.pk %}"><i class="fa fa-edit fa-fw me-2"></i>{% translate "Modifier l'OF" %}</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-header">{% translate "Imprimer les Fiches Tâches" %}</li>
+                                    {% for op in of.operations.all %}
+                                        <li><a class="dropdown-item" href="{% url 'fiche_operation' op.pk %}" target="_blank"><small>{% translate "Phase" %} {{ op.numero_phase }}: {{ op.titre }}</small></a></li>
+                                    {% empty %}
+                                        <li><a class="dropdown-item disabled" href="#">{% translate "Aucune opération" %}</a></li>
+                                    {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'of_delete' of.pk %}" onsubmit="return confirm('{% translate 'Êtes-vous sûr de vouloir supprimer définitivement cet OF ?' %}');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"><i class="fa fa-trash fa-fw me-2"></i>{% translate "Supprimer l'OF" %}</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center p-4">
+                            <p class="mb-2">{% translate "Aucun Ordre de Fabrication trouvé." %}</p>
+                            <a href="{% url 'of_create' %}" class="btn btn-sm btn-primary">{% translate "Commencez par en créer un" %}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

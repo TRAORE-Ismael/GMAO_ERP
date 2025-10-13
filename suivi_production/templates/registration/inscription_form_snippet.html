@@ -1,0 +1,5 @@
+<form method="post" action="{% url 'inscription' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">S'inscrire</button>
+</form>
