@@ -50,6 +50,7 @@
                 <div class="row align-items-center mb-2 gx-2">
                     {{ form.id }}
                     {{ form.instructions }}
+                    {{ form.matieres_requises_json }}
                     <div class="col-md-1 mb-2 mb-md-0">{{ form.numero_phase }}</div>
                     <div class="col-md-2 mb-2 mb-md-0">{{ form.poste }}</div>
                     <div class="col-md-3 mb-2 mb-md-0">{{ form.titre }}</div>
@@ -66,11 +67,9 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="openInstructionsModal('{{ form.prefix }}')" title="Gérer les instructions">
                             <i class="fa fa-list-alt"></i> Instructions
                         </button>
-                        {% if form.instance.pk %}
-                            <a href="{% url 'operation_update' form.instance.pk %}" class="btn btn-sm btn-outline-info" title="Gérer les matières premières">
-                                <i class="fa fa-cubes"></i> Matières
-                            </a>
-                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="openMaterialsModal('{{ form.prefix }}')" title="Gérer les matières premières">
+                            <i class="fa fa-cubes"></i> Matières
+                        </button>
                     </div>
                 </div>
             {% endfor %}
@@ -101,6 +100,30 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                 <button type="button" class="btn btn-primary" onclick="saveInstructions()">Sauvegarder Instructions</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les matières premières -->
+<div class="modal fade" id="materialsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gérer les Matières pour l'Opération</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="materials-form">
+                    <p>Sélectionnez les matières premières requises et leur quantité.</p>
+                    <div id="materials-form-content" class="list-group">
+                        <!-- Le contenu sera généré par JavaScript -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveMaterials()">Sauvegarder Matières</button>
             </div>
         </div>
     </div>
@@ -191,6 +214,114 @@
         const data = Object.fromEntries(formData.entries());
         document.querySelector(`#id_${currentFormPrefix}-instructions`).value = JSON.stringify(data);
         instructionsModal.hide();
+    }
+
+    // --- NOUVEAU SCRIPT POUR LES MATIÈRES PREMIÈRES ---
+    const materialsModal = new bootstrap.Modal(document.getElementById('materialsModal'));
+    let allMaterials = [];
+    try {
+        // Initialisation plus sûre de la liste des matériaux
+        const materialsJsonString = '{{ all_materials_json|escapejs }}';
+        if (materialsJsonString) {
+            allMaterials = JSON.parse(materialsJsonString);
+        }
+    } catch (e) {
+        console.error("Erreur lors de l'initialisation des matières premières:", e);
+        allMaterials = []; // Assurer que c'est un tableau vide en cas d'erreur
+    }
+
+    function openMaterialsModal(prefix) {
+        currentFormPrefix = prefix;
+        const formContent = document.getElementById('materials-form-content');
+        formContent.innerHTML = ''; // Vider le contenu précédent
+
+        // Ajout d'une vérification pour éviter les erreurs si aucun matériau n'existe
+        if (!allMaterials || allMaterials.length === 0) {
+            formContent.innerHTML = '<p class="text-center text-muted">Aucune matière première n\'est définie dans le système. Veuillez en ajouter via l\'interface d\'administration.</p>';
+            materialsModal.show();
+            return;
+        }
+
+        // Valider que la liste des matériaux est bien un tableau
+        if (!Array.isArray(allMaterials)) {
+            console.warn('allMaterials n\'est pas un tableau, réinitialisation. Valeur:', allMaterials);
+            allMaterials = [];
+        }
+
+        let selectedMaterials = {};
+        try {
+            const hiddenInput = document.querySelector(`#id_${prefix}-matieres_requises_json`);
+            if (hiddenInput && hiddenInput.value) {
+                const parsed = JSON.parse(hiddenInput.value);
+                // S'assurer que parsed est bien un objet (et non null/array)
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    selectedMaterials = parsed;
+                } else {
+                    selectedMaterials = {};
+                }
+            }
+        } catch (e) {
+            console.error("Erreur de parsing JSON pour les matières:", e);
+            selectedMaterials = {};
+        }
+
+        allMaterials.forEach(material => {
+            // Garde-fous contre les éléments mal formés
+            if (!material || material.pk === undefined || material.pk === null) {
+                return;
+            }
+            const key = String(material.pk);
+            const fields = (material && typeof material === 'object' && material.fields && typeof material.fields === 'object') ? material.fields : {};
+            const designation = fields.designation || '';
+            const reference = fields.reference || '';
+            const unite = fields.unite_mesure || '';
+
+            const isSelected = Object.prototype.hasOwnProperty.call(selectedMaterials, key);
+            const quantite = isSelected ? (Number(selectedMaterials[key]) || 1) : 1;
+
+            const itemHtml = `
+                <div class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-1">
+                            <input class="form-check-input" type="checkbox" name="mat-check-${material.pk}" id="mat-check-${prefix}-${material.pk}" ${isSelected ? 'checked' : ''}>
+                        </div>
+                        <div class="col-7">
+                            <label class="form-check-label" for="mat-check-${prefix}-${material.pk}">
+                                ${designation}${reference ? ` (${reference})` : ''}
+                            </label>
+                        </div>
+                        <div class="col-4">
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" name="mat-qty-${material.pk}" id="mat-qty-${prefix}-${material.pk}" value="${quantite}" min="0.01" step="0.01" placeholder="Quantité">
+                                <span class="input-group-text">${unite}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            formContent.innerHTML += itemHtml;
+        });
+
+        materialsModal.show();
+    }
+
+    function saveMaterials() {
+        const formContent = document.getElementById('materials-form-content');
+    const selectedMaterials = {};
+
+        allMaterials.forEach(material => {
+            const checkbox = formContent.querySelector(`#mat-check-${currentFormPrefix}-${material.pk}`);
+            if (checkbox && checkbox.checked) {
+                const qtyInput = formContent.querySelector(`#mat-qty-${currentFormPrefix}-${material.pk}`);
+                const quantite = parseFloat(qtyInput.value);
+                if (quantite > 0) {
+                    selectedMaterials[String(material.pk)] = quantite;
+                }
+            }
+        });
+
+        document.querySelector(`#id_${currentFormPrefix}-matieres_requises_json`).value = JSON.stringify(selectedMaterials);
+        materialsModal.hide();
     }
 </script>
 {% endblock %}

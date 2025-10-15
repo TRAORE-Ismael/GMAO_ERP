@@ -126,6 +126,7 @@ class Operation(models.Model):
     poste = models.ForeignKey(PosteDeTravail, on_delete=models.PROTECT, related_name='operations')
     titre = models.CharField(max_length=255, help_text="Description spécifique, ex: 'Coupe du tube principal'")
     instructions = models.JSONField(blank=True, null=True, help_text="Données structurées des instructions.")
+    matieres_requises_json = models.JSONField(blank=True, null=True, help_text="Stockage temporaire des matières pour le formset.")
 
     ordre_fabrication = models.ForeignKey(OrdreFabrication, related_name='operations', on_delete=models.CASCADE)
     numero_phase = models.IntegerField()

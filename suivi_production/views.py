@@ -10,6 +10,7 @@ from django.db.models import Sum, F, Max, Q
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.core.serializers import serialize
 
 
 
@@ -253,32 +254,157 @@ def of_list_view(request):
 @login_required
 def of_create_view(request):
     if not hasattr(request.user, 'profile') or request.user.profile.role != 'MANAGER': raise PermissionDenied
+    
+    all_materials = MatierePremiere.objects.all()
+    all_materials_json = serialize('json', all_materials)
+
     if request.method == 'POST':
-        form = OrdreFabricationForm(request.POST)
+        form = OrdreFabricationForm(request.POST, request.FILES)
         formset = OperationFormSet(request.POST)
         if form.is_valid() and formset.is_valid():
-            of = form.save(); formset.instance = of; formset.save()
+            of = form.save()
+            
+            # On sauvegarde les opérations pour qu'elles aient un ID
+            formset.instance = of
+            formset.save()
+
+            # Helper interne: parser le contenu des matières (dict ou chaîne JSON)
+            def _parse_matieres(value):
+                if not value:
+                    return {}
+                if isinstance(value, dict):
+                    return value
+                if isinstance(value, str):
+                    try:
+                        return json.loads(value)
+                    except json.JSONDecodeError:
+                        return {}
+                return {}
+
+            # On traite les matières premières pour chaque opération du formset
+            for op_form in formset.forms:
+                if op_form.cleaned_data and not op_form.cleaned_data.get('DELETE', False):
+                    operation = op_form.instance
+                    matieres_raw = op_form.cleaned_data.get('matieres_requises_json')
+                    if matieres_raw:
+                        try:
+                            matieres_data = _parse_matieres(matieres_raw)
+                            # Nettoyage puis création
+                            MatiereRequise.objects.filter(operation=operation).delete()
+                            for mat_pk, quantite in (matieres_data or {}).items():
+                                try:
+                                    pk_int = int(mat_pk)
+                                except (TypeError, ValueError):
+                                    continue
+                                try:
+                                    qty = float(quantite)
+                                except (TypeError, ValueError):
+                                    continue
+                                if qty <= 0:
+                                    continue
+                                try:
+                                    matiere = MatierePremiere.objects.get(pk=pk_int)
+                                except MatierePremiere.DoesNotExist:
+                                    continue
+                                MatiereRequise.objects.create(
+                                    operation=operation,
+                                    matiere=matiere,
+                                    quantite_necessaire=qty
+                                )
+                        except Exception as e:
+                            messages.warning(request, f"Attention : Impossible de traiter les matières pour l'opération '{operation.titre}'. Erreur : {e}")
+
             synchroniser_gamme(of)
-            messages.success(request, f"L'OF '{of.numero_of}' a été créé.")
+            messages.success(request, f"L'OF '{of.numero_of}' a été créé avec succès.")
             return redirect('of_list')
-    else: form = OrdreFabricationForm(); formset = OperationFormSet()
-    return render(request, 'suivi_production/gestion/of_form.html', {'form': form, 'formset': formset})
+    else: 
+        form = OrdreFabricationForm()
+        formset = OperationFormSet()
+    
+    context = {
+        'form': form, 
+        'formset': formset,
+        'all_materials_json': all_materials_json
+    }
+    return render(request, 'suivi_production/gestion/of_form.html', context)
 
 @login_required
 def of_update_view(request, pk):
     if not hasattr(request.user, 'profile') or request.user.profile.role != 'MANAGER': raise PermissionDenied
     of = OrdreFabrication.objects.get(pk=pk)
+    
+    all_materials = MatierePremiere.objects.all()
+    all_materials_json = serialize('json', all_materials)
+
     if request.method == 'POST':
-        form = OrdreFabricationForm(request.POST, instance=of)
+        form = OrdreFabricationForm(request.POST, request.FILES, instance=of)
         formset = OperationFormSet(request.POST, instance=of)
         if form.is_valid() and formset.is_valid():
-            form.save(); formset.save()
+            form.save()
+            formset.save()
+
+            # Traitement identique à la création
+            for op_form in formset.forms:
+                if op_form.cleaned_data and not op_form.cleaned_data.get('DELETE', False):
+                    operation = op_form.instance
+                    # Il faut s'assurer que l'instance existe bien avant de manipuler les matières
+                    if not operation.pk: continue
+
+                    matieres_raw = op_form.cleaned_data.get('matieres_requises_json')
+                    if matieres_raw:
+                        try:
+                            # Réutiliser le helper défini plus haut dans of_create_view
+                            def _parse_matieres(value):
+                                if not value:
+                                    return {}
+                                if isinstance(value, dict):
+                                    return value
+                                if isinstance(value, str):
+                                    try:
+                                        return json.loads(value)
+                                    except json.JSONDecodeError:
+                                        return {}
+                                return {}
+                            matieres_data = _parse_matieres(matieres_raw)
+                            MatiereRequise.objects.filter(operation=operation).delete()
+                            for mat_pk, quantite in (matieres_data or {}).items():
+                                try:
+                                    pk_int = int(mat_pk)
+                                except (TypeError, ValueError):
+                                    continue
+                                try:
+                                    qty = float(quantite)
+                                except (TypeError, ValueError):
+                                    continue
+                                if qty <= 0:
+                                    continue
+                                try:
+                                    matiere = MatierePremiere.objects.get(pk=pk_int)
+                                except MatierePremiere.DoesNotExist:
+                                    continue
+                                MatiereRequise.objects.create(
+                                    operation=operation,
+                                    matiere=matiere,
+                                    quantite_necessaire=qty,
+                                )
+                        except Exception as e:
+                            messages.warning(request, f"Attention : Impossible de traiter les matières pour l'opération '{operation.titre}'. Erreur : {e}")
+
             synchroniser_gamme(of)
             of.update_statut()
             messages.success(request, f"L'OF '{of.numero_of}' a été mis à jour.")
             return redirect('of_list')
-    else: form = OrdreFabricationForm(instance=of); formset = OperationFormSet(instance=of)
-    return render(request, 'suivi_production/gestion/of_form.html', {'form': form, 'formset': formset, 'of': of})
+    else: 
+        form = OrdreFabricationForm(instance=of)
+        formset = OperationFormSet(instance=of)
+
+    context = {
+        'form': form, 
+        'formset': formset, 
+        'of': of,
+        'all_materials_json': all_materials_json
+    }
+    return render(request, 'suivi_production/gestion/of_form.html', context)
 
 @login_required
 def of_delete_view(request, pk):

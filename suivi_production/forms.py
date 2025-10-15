@@ -60,31 +60,36 @@ class OrdreFabricationForm(forms.ModelForm):
         }
 
 class OperationForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['titre'].required = False
-
     class Meta:
         model = Operation
         fields = [
             'numero_phase', 
-            'type_operation', 
             'poste', 
             'titre', 
-            'temps_prevu_minutes', 
-            'machine_assignee',
-            'instructions', # On garde le champ, même s'il sera géré par JS
+            'type_operation', 
+            'machine_assignee', 
+            'temps_prevu_minutes',
+            'instructions',
+            'matieres_requises_json', # Ajout du champ
         ]
         widgets = {
-            'numero_phase': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 10'}),
-            'type_operation': forms.Select(attrs={'class': 'form-select'}),
-            'poste': forms.Select(attrs={'class': 'form-select'}), # Maintenant une liste déroulante
-            'titre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Description spécifique (optionnel)"}),
-            'temps_prevu_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
-            'machine_assignee': forms.Select(attrs={'class': 'form-select'}),
-            # On cache le champ JSON, qui sera rempli par notre future modal
-            'instructions': forms.HiddenInput(), 
+            'numero_phase': forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+            'poste': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'titre': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Description brève'}),
+            'type_operation': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'machine_assignee': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'temps_prevu_minutes': forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+            'instructions': forms.HiddenInput(),
+            'matieres_requises_json': forms.HiddenInput(), # Ajout du widget
         }
+        # Rendre le champ 'titre' optionnel
+        labels = {
+            'titre': 'Description',
+        }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['titre'].required = False
 
 # Formset pour gérer plusieurs Opérations à l'intérieur d'un OrdreFabrication
 OperationFormSet = forms.inlineformset_factory(
